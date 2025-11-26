@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { format, addDays, subDays, eachDayOfInterval, isToday } from "date-fns";
+import { format, subDays, eachDayOfInterval, isToday } from "date-fns";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { DrugHighlight } from "@/lib/types";
@@ -24,11 +24,17 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import PinDialog from "./PinDialog";
 import { Pencil, Save, X, Calendar as CalendarIcon, Loader2 } from "lucide-react";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 const drugSchema = z.object({
   name: z.string().min(1, "Drug name is required."),
@@ -108,9 +114,9 @@ export default function PharmaFlashClient() {
   const datesForNavigation = useMemo(() => {
     const today = new Date();
     return eachDayOfInterval({
-      start: subDays(today, 7),
-      end: addDays(today, 7),
-    });
+      start: subDays(today, 30),
+      end: today,
+    }).reverse();
   }, []);
 
   const handleSave = async (data: DrugHighlight) => {
@@ -152,24 +158,32 @@ export default function PharmaFlashClient() {
         <p className="text-center text-primary text-lg mt-2">Your daily dose of pharmacology.</p>
       </div>
       
-      <div className="px-6 pb-4">
-        <ScrollArea className="w-full whitespace-nowrap rounded-md">
-          <div className="flex space-x-2 pb-4">
+      <div className="px-12 pb-4">
+        <Carousel
+          opts={{
+            align: "start",
+            startIndex: datesForNavigation.findIndex(d => format(d, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')),
+          }}
+          className="w-full"
+        >
+          <CarouselContent>
             {datesForNavigation.map((date) => (
-              <Button
-                key={date.toString()}
-                variant={format(date, "yyyy-MM-dd") === dateString ? "default" : "outline"}
-                className={`flex-col h-auto py-2 px-3 ${format(date, "yyyy-MM-dd") === dateString ? 'bg-accent text-accent-foreground hover:bg-accent/90' : ''}`}
-                onClick={() => setSelectedDate(date)}
-              >
-                <span className="text-sm font-medium">{format(date, "EEE")}</span>
-                <span className="text-xl font-bold">{format(date, "d")}</span>
-                <span className="text-xs text-muted-foreground">{isToday(date) ? "Today" : format(date, "MMM")}</span>
-              </Button>
+              <CarouselItem key={date.toString()} className="basis-1/7 md:basis-1/5 lg:basis-1/7">
+                 <Button
+                  variant={format(date, "yyyy-MM-dd") === dateString ? "default" : "outline"}
+                  className={`flex-col h-auto py-2 px-3 w-full ${format(date, "yyyy-MM-dd") === dateString ? 'bg-accent text-accent-foreground hover:bg-accent/90' : ''}`}
+                  onClick={() => setSelectedDate(date)}
+                >
+                  <span className="text-sm font-medium">{format(date, "EEE")}</span>
+                  <span className="text-xl font-bold">{format(date, "d")}</span>
+                  <span className="text-xs text-muted-foreground">{isToday(date) ? "Today" : format(date, "MMM")}</span>
+                </Button>
+              </CarouselItem>
             ))}
-          </div>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+          </CarouselContent>
+          <CarouselPrevious />
+          <CarouselNext />
+        </Carousel>
       </div>
 
       <div className="px-6 pb-6">
@@ -192,14 +206,14 @@ export default function PharmaFlashClient() {
                     {isLoading ? (
                         formFields.map(field => (
                             <TableRow key={field.key}>
-                                <TableCell className="font-semibold w-1/3">{field.label}</TableCell>
+                                <TableCell className="font-semibold w-1/3 font-body">{field.label}</TableCell>
                                 <TableCell><Skeleton className="h-8 w-full" /></TableCell>
                             </TableRow>
                         ))
                     ) : (
                         formFields.map(field => (
                             <TableRow key={field.key}>
-                                <TableCell className="font-semibold w-1/3 align-top pt-5">{field.label}</TableCell>
+                                <TableCell className="font-semibold w-1/3 align-top pt-5 font-body">{field.label}</TableCell>
                                 <TableCell>
                                 {isEditing ? (
                                     <FormField
@@ -209,9 +223,9 @@ export default function PharmaFlashClient() {
                                             <FormItem>
                                             <FormControl>
                                                 {field.isTextarea ? (
-                                                    <Textarea placeholder={`Enter ${field.label.toLowerCase()}...`} {...formFieldRender} className="min-h-[100px]" />
+                                                    <Textarea placeholder={`Enter ${field.label.toLowerCase()}...`} {...formFieldRender} className="min-h-[100px] font-body" />
                                                 ) : (
-                                                    <Input placeholder={`Enter ${field.label.toLowerCase()}...`} {...formFieldRender} />
+                                                    <Input placeholder={`Enter ${field.label.toLowerCase()}...`} {...formFieldRender} className="font-body" />
                                                 )}
                                             </FormControl>
                                             <FormMessage />
@@ -219,7 +233,7 @@ export default function PharmaFlashClient() {
                                         )}
                                     />
                                 ) : (
-                                    <p className="text-muted-foreground min-h-[2.5rem] flex items-center whitespace-pre-wrap font-normal">
+                                    <p className="text-muted-foreground min-h-[2.5rem] flex items-center whitespace-pre-wrap font-body">
                                         {(drugData && drugData[field.key]) || "No data available."}
                                     </p>
                                 )}
