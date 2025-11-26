@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format, subDays, eachDayOfInterval, isToday } from "date-fns";
 import { doc, getDoc } from "firebase/firestore";
-import { useFirestore } from "@/firebase";
+import { useAuth, useFirestore, useUser } from "@/firebase";
 import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import type { DrugHighlight } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
 
 const drugSchema = z.object({
   drugName: z.string().min(1, "Drug name is required."),
@@ -75,6 +76,8 @@ export default function PharmaFlashClient() {
 
   const { toast } = useToast();
   const firestore = useFirestore();
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
 
   const form = useForm<DrugHighlight>({
     resolver: zodResolver(drugSchema),
@@ -83,6 +86,12 @@ export default function PharmaFlashClient() {
 
   const dateString = useMemo(() => format(selectedDate, "yyyy-MM-dd"), [selectedDate]);
 
+  useEffect(() => {
+    if (auth && !user && !isUserLoading) {
+      initiateAnonymousSignIn(auth);
+    }
+  }, [auth, user, isUserLoading]);
+  
   useEffect(() => {
     if (!firestore) return;
     const fetchDrugData = async () => {
@@ -116,10 +125,11 @@ export default function PharmaFlashClient() {
 
   const datesForNavigation = useMemo(() => {
     const today = new Date();
-    return eachDayOfInterval({
+    const pastDates = eachDayOfInterval({
       start: subDays(today, 30),
       end: today,
     });
+    return pastDates.sort((a,b) => a.getTime() - b.getTime());
   }, []);
 
   const handleSave = async (data: DrugHighlight) => {
@@ -165,7 +175,7 @@ export default function PharmaFlashClient() {
         >
           <CarouselContent>
             {datesForNavigation.map((date) => (
-              <CarouselItem key={date.toString()} className="basis-auto sm:basis-1/7 md:basis-1/10 lg:basis-1/12">
+              <CarouselItem key={date.toString()} className="basis-1/7 sm:basis-1/10 md:basis-1/12 lg:basis-[8%]">
                  <Button
                   variant={format(date, "yyyy-MM-dd") === dateString ? "default" : "outline"}
                   className={`flex-col h-auto p-2 w-full text-xs ${format(date, "yyyy-MM-dd") === dateString ? 'bg-accent text-accent-foreground hover:bg-accent/90' : ''}`}
@@ -173,7 +183,7 @@ export default function PharmaFlashClient() {
                 >
                   <span className="font-medium">{format(date, "EEE")}</span>
                   <span className="text-lg font-bold">{format(date, "d")}</span>
-                  <span className="text-muted-foreground">{isToday(date) ? "Today" : format(date, "MMM")}</span>
+                  <span className="text-xs text-muted-foreground">{isToday(date) ? "Today" : format(date, "MMM")}</span>
                 </Button>
               </CarouselItem>
             ))}

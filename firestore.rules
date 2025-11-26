@@ -1,19 +1,4 @@
-/**
- * Core Philosophy: This ruleset establishes a secure data model for 'drugHighlights'.
- * Anonymous users can read the drug highlight data, but only authenticated users
- * can modify it. This supports the PIN-protected edit mode.
- *
- * Data Structure: All data is stored in a single top-level collection: /drugHighlights/{date}.
- * The document ID is the date of the highlight in 'YYYY-MM-DD' format.
- *
- * Key Security Decisions:
- * - Public Read Access: The `drugHighlights` collection is readable by anyone to
- *   support the app's core feature of displaying daily drug information.
- * - Authenticated Write Access: All write operations (`create`, `update`, `delete`) are allowed
- *   only for authenticated users (`request.auth != null`). This provides a basic level of
- *   security for the PIN-protected edit mode, ensuring only users who have passed
- *   some form of authentication (even if anonymous) can attempt to write data.
- */
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {

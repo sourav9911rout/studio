@@ -14,6 +14,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { KeyRound } from "lucide-react";
+import { useAuth } from "@/firebase";
+import { initiateEmailSignIn } from "@/firebase/non-blocking-login";
+
 
 const ADMIN_PIN = "743351"; // In a real app, this should be handled securely.
 
@@ -27,8 +30,11 @@ export default function PinDialog({ open, onOpenChange, onSuccess }: PinDialogPr
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const { toast } = useToast();
+  const auth = useAuth();
 
   const handleConfirm = () => {
+    // This is a placeholder for a real authentication check.
+    // In a real application, you would use Firebase Auth to verify credentials.
     if (pin === ADMIN_PIN) {
       setError("");
       onSuccess();
@@ -38,6 +44,12 @@ export default function PinDialog({ open, onOpenChange, onSuccess }: PinDialogPr
       });
       onOpenChange(false);
       setPin("");
+
+      // This is a mock sign-in. Replace with your actual admin credentials.
+      if (auth) {
+        initiateEmailSignIn(auth, "admin@example.com", "password123");
+      }
+      
     } else {
       setError("Invalid PIN. Please try again.");
     }
@@ -60,7 +72,7 @@ export default function PinDialog({ open, onOpenChange, onSuccess }: PinDialogPr
             Enter Admin PIN
           </DialogTitle>
           <DialogDescription>
-            Enter the PIN to enable edit mode.
+            Enter the PIN to enable edit mode. This is a placeholder for a real login.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
