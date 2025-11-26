@@ -1,0 +1,50 @@
+/**
+ * Core Philosophy: This ruleset establishes a secure, public, read-only data model for 'drugHighlights'.
+ * All users, including anonymous ones, can read the drug highlight data, but no client-side
+ * modifications (creations, updates, or deletions) are permitted.
+ *
+ * Data Structure: All data is stored in a single top-level collection: /drugHighlights/{date}.
+ * The document ID is the date of the highlight in 'YYYY-MM-DD' format.
+ *
+ * Key Security Decisions:
+ * - Public Read Access: The `drugHighlights` collection is fully public and readable by anyone to
+ *   support the app's core feature of displaying daily drug information.
+ * - No Client Writes: All write operations (`create`, `update`, `delete`) are disabled. The
+ *   `reasoning` text mentions a "PIN-Protected Edit Mode," which implies content should be managed
+ *   by a trusted backend server or admin panel using the Admin SDK, not directly by clients.
+ *   This rule enforces that security posture.
+ * - No User-Specific Data: There are no user-owned documents or private subcollections, simplifying
+ *   the security model significantly.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =====================================================================
+    // Helper Functions
+    // =====================================================================
+
+    // =====================================================================
+    // Collection Rules
+    // =====================================================================
+
+    /**
+     * @description Provides public, read-only access to daily drug highlights.
+     * @path        /drugHighlights/{date}
+     * @allow       Any user, authenticated or not, can read a specific drug highlight. (e.g., `(get /drugHighlights/2023-10-27)`).
+     * @deny        No client is allowed to create a new drug highlight. (e.g., `(create /drugHighlights/2023-10-28)` fails for everyone).
+     * @principle   Secures a public dataset by disabling all client-side write operations. Content management must be performed by a trusted backend service using the Admin SDK.
+     */
+    match /drugHighlights/{date} {
+      // READ rules: Data is public and can be read by anyone.
+      allow get: if true;
+      allow list: if true;
+
+      // WRITE rules: All client-side writes are disabled. This enforces the "PIN-Protected Edit Mode"
+      // by requiring modifications to come from a trusted backend server.
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}

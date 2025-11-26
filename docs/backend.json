@@ -1,0 +1,76 @@
+{
+  "entities": {
+    "DrugHighlight": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "DrugHighlight",
+      "type": "object",
+      "description": "Represents a drug highlight for a specific date, containing information about the drug.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the DrugHighlight entity. Serves as the document ID in Firestore (Date in YYYY-MM-DD format)."
+        },
+        "drugName": {
+          "type": "string",
+          "description": "Name of the drug."
+        },
+        "drugClass": {
+          "type": "string",
+          "description": "Class of the drug."
+        },
+        "mechanism": {
+          "type": "string",
+          "description": "Mechanism of action of the drug."
+        },
+        "uses": {
+          "type": "string",
+          "description": "Common uses of the drug."
+        },
+        "sideEffects": {
+          "type": "string",
+          "description": "Common side effects of the drug."
+        },
+        "funFact": {
+          "type": "string",
+          "description": "A fun or interesting fact about the drug."
+        }
+      },
+      "required": [
+        "id",
+        "drugName",
+        "drugClass",
+        "mechanism",
+        "uses",
+        "sideEffects",
+        "funFact"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/drugHighlights/{date}",
+        "definition": {
+          "entityName": "DrugHighlight",
+          "schema": {
+            "$ref": "#/backend/entities/DrugHighlight"
+          },
+          "description": "Stores drug highlights. The 'date' parameter serves as the document ID (YYYY-MM-DD format).",
+          "params": [
+            {
+              "name": "date",
+              "description": "Date in YYYY-MM-DD format, serving as the document ID."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "Given the requirement for a 'PIN-Protected Edit Mode' and the nature of the data (drug highlights by date), the most straightforward structure is to store drug highlights in a top-level collection, using the date as the document ID. This simplifies data retrieval and updates. \n\n**Authorization Independence:** Since no user-specific data or complex access control is mentioned, and a simple PIN-based edit mode is used, denormalization isn't strictly necessary at this level.  If more granular user-based access controls are added in the future, a separate collection to store authorized editor UIDs (or a similar mechanism) can be introduced.\n\n**QAPs:**  This structure inherently supports simple `list` operations since all documents share the same security posture (date-based entries).\n"
+  }
+}
