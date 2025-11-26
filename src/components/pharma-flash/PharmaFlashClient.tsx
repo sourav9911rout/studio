@@ -148,8 +148,8 @@ export default function PharmaFlashClient() {
   return (
     <>
       <div className="p-6">
-        <h1 className="text-3xl font-headline font-bold text-center tracking-tight">Department of Pharmacology</h1>
-        <p className="text-center text-muted-foreground mt-2">Your daily dose of pharmacology.</p>
+        <h1 className="text-3xl font-headline font-bold text-center tracking-tight text-primary">Department of Pharmacology</h1>
+        <p className="text-center text-primary text-lg mt-2">Your daily dose of pharmacology.</p>
       </div>
       
       <div className="px-6 pb-4">
