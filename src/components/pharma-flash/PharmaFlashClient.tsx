@@ -116,7 +116,7 @@ export default function PharmaFlashClient() {
     return eachDayOfInterval({
       start: subDays(today, 30),
       end: today,
-    }).reverse();
+    });
   }, []);
 
   const handleSave = async (data: DrugHighlight) => {
