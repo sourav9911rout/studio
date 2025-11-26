@@ -5,8 +5,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format, subDays, eachDayOfInterval, isToday } from "date-fns";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { useFirestore } from "@/firebase";
+import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import type { DrugHighlight } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,8 +38,8 @@ import {
 } from "@/components/ui/carousel";
 
 const drugSchema = z.object({
-  name: z.string().min(1, "Drug name is required."),
-  class: z.string().min(1, "Class is required."),
+  drugName: z.string().min(1, "Drug name is required."),
+  drugClass: z.string().min(1, "Class is required."),
   mechanism: z.string().min(1, "Mechanism is required."),
   uses: z.string().min(1, "Uses are required."),
   sideEffects: z.string().min(1, "Side effects are required."),
@@ -46,8 +47,8 @@ const drugSchema = z.object({
 });
 
 const formFields: { key: keyof DrugHighlight, label: string, isTextarea: boolean }[] = [
-    { key: 'name', label: 'Drug of the Day', isTextarea: false },
-    { key: 'class', label: 'Drug Class', isTextarea: false },
+    { key: 'drugName', label: 'Drug of the Day', isTextarea: false },
+    { key: 'drugClass', label: 'Drug Class', isTextarea: false },
     { key: 'mechanism', label: 'Mechanism of Action', isTextarea: true },
     { key: 'uses', label: 'Common Uses', isTextarea: true },
     { key: 'sideEffects', label: 'Side Effects', isTextarea: true },
@@ -55,8 +56,8 @@ const formFields: { key: keyof DrugHighlight, label: string, isTextarea: boolean
 ];
 
 const emptyDrugData: DrugHighlight = {
-    name: "",
-    class: "",
+    drugName: "",
+    drugClass: "",
     mechanism: "",
     uses: "",
     sideEffects: "",
@@ -73,6 +74,7 @@ export default function PharmaFlashClient() {
   const [isSaving, setIsSaving] = useState(false);
 
   const { toast } = useToast();
+  const firestore = useFirestore();
 
   const form = useForm<DrugHighlight>({
     resolver: zodResolver(drugSchema),
@@ -82,10 +84,11 @@ export default function PharmaFlashClient() {
   const dateString = useMemo(() => format(selectedDate, "yyyy-MM-dd"), [selectedDate]);
 
   useEffect(() => {
+    if (!firestore) return;
     const fetchDrugData = async () => {
       setIsLoading(true);
       try {
-        const docRef = doc(db, "drug_highlights", dateString);
+        const docRef = doc(firestore, "drugHighlights", dateString);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
@@ -109,7 +112,7 @@ export default function PharmaFlashClient() {
     };
 
     fetchDrugData();
-  }, [dateString, form, toast]);
+  }, [dateString, form, toast, firestore]);
 
   const datesForNavigation = useMemo(() => {
     const today = new Date();
@@ -120,26 +123,20 @@ export default function PharmaFlashClient() {
   }, []);
 
   const handleSave = async (data: DrugHighlight) => {
+    if (!firestore) return;
     setIsSaving(true);
-    try {
-      const docRef = doc(db, "drug_highlights", dateString);
-      await setDoc(docRef, data);
-      setDrugData(data);
-      setIsEditing(false);
-      toast({
-        title: "Success",
-        description: `Drug highlight for ${dateString} has been saved.`,
-      });
-    } catch (error) {
-      console.error("Error saving data:", error);
-      toast({
-        variant: "destructive",
-        title: "Save Failed",
-        description: "Could not save data to Firestore. Please check console for errors.",
-      });
-    } finally {
-      setIsSaving(false);
-    }
+    const docRef = doc(firestore, "drugHighlights", dateString);
+    setDocumentNonBlocking(docRef, data, { merge: true });
+    
+    // Optimistically update UI
+    setDrugData(data);
+    setIsEditing(false);
+    setIsSaving(false);
+
+    toast({
+      title: "Success",
+      description: `Drug highlight for ${dateString} has been saved.`,
+    });
   };
 
   const handleCancelEdit = () => {

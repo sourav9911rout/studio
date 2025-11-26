@@ -1,8 +1,8 @@
 export interface DrugHighlight {
-  name: string;
-  class: string;
+  drugName: string;
+  drugClass: string;
   mechanism: string;
   uses: string;
   sideEffects: string;
-  funFact: string;
+  funFact:string;
 }
