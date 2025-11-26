@@ -162,21 +162,21 @@ export default function PharmaFlashClient() {
         <Carousel
           opts={{
             align: "start",
-            startIndex: datesForNavigation.findIndex(d => format(d, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')),
+            startIndex: datesForNavigation.length - 1,
           }}
           className="w-full"
         >
           <CarouselContent>
             {datesForNavigation.map((date) => (
-              <CarouselItem key={date.toString()} className="basis-1/7 md:basis-1/5 lg:basis-1/7">
+              <CarouselItem key={date.toString()} className="basis-auto sm:basis-1/7 md:basis-1/10 lg:basis-1/12">
                  <Button
                   variant={format(date, "yyyy-MM-dd") === dateString ? "default" : "outline"}
-                  className={`flex-col h-auto py-2 px-3 w-full ${format(date, "yyyy-MM-dd") === dateString ? 'bg-accent text-accent-foreground hover:bg-accent/90' : ''}`}
+                  className={`flex-col h-auto p-2 w-full text-xs ${format(date, "yyyy-MM-dd") === dateString ? 'bg-accent text-accent-foreground hover:bg-accent/90' : ''}`}
                   onClick={() => setSelectedDate(date)}
                 >
-                  <span className="text-sm font-medium">{format(date, "EEE")}</span>
-                  <span className="text-xl font-bold">{format(date, "d")}</span>
-                  <span className="text-xs text-muted-foreground">{isToday(date) ? "Today" : format(date, "MMM")}</span>
+                  <span className="font-medium">{format(date, "EEE")}</span>
+                  <span className="text-lg font-bold">{format(date, "d")}</span>
+                  <span className="text-muted-foreground">{isToday(date) ? "Today" : format(date, "MMM")}</span>
                 </Button>
               </CarouselItem>
             ))}
