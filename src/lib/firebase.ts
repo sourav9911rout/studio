@@ -6,14 +6,7 @@ import { getFirestore } from "firebase/firestore";
 // IMPORTANT: Replace with your own Firebase configuration and secure your Firestore rules.
 // See: https://firebase.google.com/docs/web/setup
 // And: https://firebase.google.com/docs/firestore/security/get-started
-const firebaseConfig = {
-  apiKey: "AIza-YOUR-API-KEY-HERE",
-  authDomain: "your-project-id.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project-id.appspot.com",
-  messagingSenderId: "your-sender-id",
-  appId: "your-app-id"
-};
+const firebaseConfig = {"apiKey":"AIzaSyA21c8G1c73a6vJ5Vd6-wh4e3d551ec9a3b836c7","authDomain":"pharma-flash-34881.firebaseapp.com","projectId":"pharma-flash-34881","storageBucket":"pharma-flash-34881.appspot.com","messagingSenderId":"1029810852153","appId":"1:1029810852153:web:2121764614a9354142f451"};
 
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();

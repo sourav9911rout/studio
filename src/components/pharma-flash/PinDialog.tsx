@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { KeyRound } from "lucide-react";
 
-const ADMIN_PIN = "1234"; // In a real app, this should be handled securely.
+const ADMIN_PIN = "743351"; // In a real app, this should be handled securely.
 
 interface PinDialogProps {
   open: boolean;
@@ -60,7 +60,7 @@ export default function PinDialog({ open, onOpenChange, onSuccess }: PinDialogPr
             Enter Admin PIN
           </DialogTitle>
           <DialogDescription>
-            Enter the 4-digit PIN to enable edit mode.
+            Enter the PIN to enable edit mode.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -74,7 +74,6 @@ export default function PinDialog({ open, onOpenChange, onSuccess }: PinDialogPr
               value={pin}
               onChange={(e) => setPin(e.target.value)}
               className="col-span-3"
-              maxLength={4}
               autoComplete="one-time-code"
             />
           </div>
