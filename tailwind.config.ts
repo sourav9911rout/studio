@@ -10,7 +10,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['"Times New Roman"', 'Times', 'serif'],
+        body: ['"Calibri"', 'sans-serif'],
         headline: ['"Times New Roman"', 'Times', 'serif'],
         code: ['monospace'],
       },

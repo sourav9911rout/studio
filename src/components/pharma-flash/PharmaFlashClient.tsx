@@ -40,7 +40,7 @@ const drugSchema = z.object({
 });
 
 const formFields: { key: keyof DrugHighlight, label: string, isTextarea: boolean }[] = [
-    { key: 'name', label: 'Drug Name', isTextarea: false },
+    { key: 'name', label: 'Drug of the Day', isTextarea: false },
     { key: 'class', label: 'Drug Class', isTextarea: false },
     { key: 'mechanism', label: 'Mechanism of Action', isTextarea: true },
     { key: 'uses', label: 'Common Uses', isTextarea: true },
@@ -219,7 +219,7 @@ export default function PharmaFlashClient() {
                                         )}
                                     />
                                 ) : (
-                                    <p className="text-muted-foreground min-h-[2.5rem] flex items-center whitespace-pre-wrap">
+                                    <p className="text-muted-foreground min-h-[2.5rem] flex items-center whitespace-pre-wrap font-normal">
                                         {(drugData && drugData[field.key]) || "No data available."}
                                     </p>
                                 )}
