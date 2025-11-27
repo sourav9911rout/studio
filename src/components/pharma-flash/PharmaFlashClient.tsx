@@ -128,7 +128,7 @@ export default function PharmaFlashClient() {
   const datesForNavigation = useMemo(() => {
     const today = new Date();
     const pastDates = eachDayOfInterval({
-      start: subDays(today, 30),
+      start: subDays(today, 31),
       end: today,
     });
     return pastDates.sort((a,b) => a.getTime() - b.getTime());
