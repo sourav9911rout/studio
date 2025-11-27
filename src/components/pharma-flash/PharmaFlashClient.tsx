@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format, subDays, eachDayOfInterval, isToday } from "date-fns";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, query } from "firebase/firestore";
 import { useAuth, useFirestore, useUser } from "@/firebase";
 import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import type { DrugHighlight } from "@/lib/types";
@@ -38,6 +38,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
+import { cn } from "@/lib/utils";
 
 const drugSchema = z.object({
   drugName: z.string().min(1, "Drug name is required."),
@@ -70,6 +71,7 @@ const emptyDrugData: DrugHighlight = {
 export default function PharmaFlashClient() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [drugData, setDrugData] = useState<DrugHighlight | null>(null);
+  const [datesWithData, setDatesWithData] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
@@ -94,6 +96,19 @@ export default function PharmaFlashClient() {
     }
   }, [auth, user, isUserLoading]);
   
+  useEffect(() => {
+    if (!firestore) return;
+
+    const fetchDatesWithData = async () => {
+        const q = query(collection(firestore, "drugHighlights"));
+        const querySnapshot = await getDocs(q);
+        const dates = new Set(querySnapshot.docs.map(doc => doc.id));
+        setDatesWithData(dates);
+    };
+
+    fetchDatesWithData();
+  }, [firestore]);
+
   useEffect(() => {
     if (!firestore) return;
     const fetchDrugData = async () => {
@@ -127,11 +142,10 @@ export default function PharmaFlashClient() {
 
   const datesForNavigation = useMemo(() => {
     const today = new Date();
-    const pastDates = eachDayOfInterval({
-      start: subDays(today, 33),
+    return eachDayOfInterval({
+      start: new Date("2025-10-25"),
       end: today,
-    });
-    return pastDates.sort((a,b) => a.getTime() - b.getTime());
+    }).sort((a,b) => a.getTime() - b.getTime());
   }, []);
 
   const handleSave = async (data: DrugHighlight) => {
@@ -142,6 +156,7 @@ export default function PharmaFlashClient() {
     
     // Optimistically update UI
     setDrugData(data);
+    setDatesWithData(prev => new Set(prev).add(dateString));
     setIsEditing(false);
     setIsSaving(false);
 
@@ -160,6 +175,11 @@ export default function PharmaFlashClient() {
     setIsEditing(false);
   }
 
+  const initialCarouselIndex = useMemo(() => {
+    const index = datesForNavigation.findIndex(d => format(d, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd'));
+    return index > -1 ? index : datesForNavigation.length - 1;
+  }, [datesForNavigation]);
+
   return (
     <>
       <div className="p-6">
@@ -172,16 +192,26 @@ export default function PharmaFlashClient() {
         <Carousel
           opts={{
             align: "start",
-            startIndex: datesForNavigation.length - 1,
+            startIndex: initialCarouselIndex,
           }}
           className="w-full"
         >
           <CarouselContent>
-            {datesForNavigation.map((date) => (
+            {datesForNavigation.map((date) => {
+              const formattedDate = format(date, "yyyy-MM-dd");
+              const hasData = datesWithData.has(formattedDate);
+              const isSelected = formattedDate === dateString;
+
+              return (
               <CarouselItem key={date.toString()} className="basis-1/7 sm:basis-1/10 md:basis-1/12 lg:basis-[8%]">
                  <Button
-                  variant={format(date, "yyyy-MM-dd") === dateString ? "default" : "outline"}
-                  className={`flex-col h-auto p-2 w-full text-xs ${format(date, "yyyy-MM-dd") === dateString ? 'bg-accent text-accent-foreground hover:bg-accent/90' : ''}`}
+                  variant={isSelected ? "default" : "outline"}
+                  className={cn(
+                    "flex-col h-auto p-2 w-full text-xs",
+                    isSelected && 'bg-accent text-accent-foreground hover:bg-accent/90',
+                    !isSelected && hasData && 'bg-primary/20 border-primary/50',
+                    !isSelected && !hasData && 'bg-secondary/50'
+                  )}
                   onClick={() => setSelectedDate(date)}
                 >
                   <span className="font-medium">{format(date, "EEE")}</span>
@@ -189,7 +219,7 @@ export default function PharmaFlashClient() {
                   <span className="text-xs text-muted-foreground">{isToday(date) ? "Today" : format(date, "MMM")}</span>
                 </Button>
               </CarouselItem>
-            ))}
+            )})}
           </CarouselContent>
           <CarouselPrevious />
           <CarouselNext />
@@ -285,6 +315,7 @@ export default function PharmaFlashClient() {
       <DownloadDialog
         open={isDownloadDialogOpen}
         onOpenChange={setIsDownloadDialogOpen}
+        datesWithData={datesWithData}
       />
     </>
   );

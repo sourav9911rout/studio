@@ -31,11 +31,13 @@ import { Download, Loader2 } from "lucide-react";
 interface DownloadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  datesWithData: Set<string>;
 }
 
 export default function DownloadDialog({
   open,
   onOpenChange,
+  datesWithData,
 }: DownloadDialogProps) {
   const [range, setRange] = useState<DateRange | undefined>();
   const [isDownloading, setIsDownloading] = useState(false);
@@ -159,6 +161,8 @@ export default function DownloadDialog({
     }
   };
 
+  const hasDataModifier = Array.from(datesWithData).map(dateStr => new Date(dateStr.replace(/-/g, '/')));
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -177,6 +181,8 @@ export default function DownloadDialog({
             selected={range}
             onSelect={setRange}
             numberOfMonths={1}
+            modifiers={{ hasData: hasDataModifier }}
+            modifiersStyles={{ hasData: { backgroundColor: "hsl(var(--primary) / 0.2)",  border: "1px solid hsl(var(--primary) / 0.5)"} }}
           />
         </div>
         <DialogFooter>
