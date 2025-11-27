@@ -87,55 +87,53 @@ export default function DownloadDialog({
       const highlightsPerPage = 4;
       let lastY = 0;
 
-      const addPageHeader = () => {
-        doc.setFontSize(20);
-        doc.text("Department of Pharmacology", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
-        doc.setFontSize(16);
-        doc.text("भेषजगुण विज्ञान विभाग", doc.internal.pageSize.getWidth() / 2, 30, { align: 'center' });
-        lastY = 35; // Reset Y position for content
+      const addPageHeader = (docInstance: jsPDF) => {
+        docInstance.setFontSize(20);
+        docInstance.text("Department of Pharmacology", docInstance.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+        docInstance.setFontSize(16);
+        docInstance.text("भेषजगुण विज्ञान विभाग", docInstance.internal.pageSize.getWidth() / 2, 30, { align: 'center' });
+        return 35; // Return the Y position after the header
       };
       
-      addPageHeader();
+      lastY = addPageHeader(doc);
 
       highlights.forEach((highlight, index) => {
-        const isNewPage = index % highlightsPerPage === 0 && index > 0;
+        const isNewPage = index > 0 && index % highlightsPerPage === 0;
+        
         if (isNewPage) {
           doc.addPage();
-          addPageHeader();
+          lastY = addPageHeader(doc);
         }
 
+        const tableBody = [
+            ['Date', format(new Date(highlight.id.replace(/-/g, '/')), "d-MMMM-yyyy")],
+            ['Drug of the Day', highlight.drugName],
+            ['Class', highlight.drugClass],
+            ['Mechanism of action', highlight.mechanism],
+            ['Uses', highlight.uses],
+            ['Side Effects', highlight.sideEffects],
+            ['Fun-fact', highlight.funFact],
+        ];
+
         autoTable(doc, {
-            head: [[
-                { content: format(new Date(highlight.id.replace(/-/g, '/')), "d-MMMM-yyyy"), styles: { halign: 'left', fontStyle: 'bold' } },
-                { content: 'Daily Drug Highlight', styles: { halign: 'center', fontStyle: 'bold' } }
-            ]],
-            body: [
-                ['Drug of the Day', highlight.drugName],
-                ['Class', highlight.drugClass],
-                ['Mechanism of action', highlight.mechanism],
-                ['Uses', highlight.uses],
-                ['Side Effects', highlight.sideEffects],
-                ['Fun-fact', highlight.funFact],
-            ],
+            body: tableBody,
             startY: lastY + 5,
             theme: 'grid',
             styles: {
                 font: 'helvetica',
                 lineWidth: 0.1,
                 lineColor: [0, 0, 0],
-            },
-            headStyles: {
-                fillColor: [255, 255, 255],
-                textColor: [0, 0, 0],
-                fontSize: 10,
+                fontSize: 9,
             },
             bodyStyles: {
                 fillColor: [255, 255, 255],
                 textColor: [0, 0, 0],
-                fontSize: 9,
             },
             columnStyles: {
                 0: { fontStyle: 'bold' }
+            },
+            didDrawPage: (data) => {
+              lastY = data.cursor?.y ?? lastY;
             }
         });
         lastY = (doc as any).lastAutoTable.finalY;
