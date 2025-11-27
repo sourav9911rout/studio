@@ -34,18 +34,6 @@ interface DownloadDialogProps {
   datesWithData: Set<string>;
 }
 
-// Function to convert image URL to Base64
-const toBase64 = async (url: string) => {
-  const response = await fetch(url);
-  const blob = await response.blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-};
-
 export default function DownloadDialog({
   open,
   onOpenChange,
@@ -70,10 +58,6 @@ export default function DownloadDialog({
     setIsDownloading(true);
 
     try {
-      // TODO: Replace this with your desired background image URL
-      const imageUrl = 'https://picsum.photos/seed/pharma/595/842'; // A4 size for placeholder
-      const imageBase64 = await toBase64(imageUrl);
-
       const startDate = format(range.from, "yyyy-MM-dd");
       const endDate = format(range.to, "yyyy-MM-dd");
 
@@ -104,16 +88,6 @@ export default function DownloadDialog({
 
       const highlightsPerPage = 4;
       let lastY = 0;
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-
-      const addPageWithBackground = (docInstance: jsPDF) => {
-          docInstance.addImage(imageBase64 as string, 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'FAST');
-          docInstance.setFont("times", "normal");
-          docInstance.setFontSize(20);
-          docInstance.text("Department of Pharmacology", pageWidth / 2, 20, { align: 'center' });
-          return 30; // Return the Y position after the header
-      }
       
       const addPageHeader = (docInstance: jsPDF) => {
         docInstance.setFont("times", "normal");
@@ -122,14 +96,14 @@ export default function DownloadDialog({
         return 30; // Return the Y position after the header
       };
       
-      lastY = addPageWithBackground(doc);
+      lastY = addPageHeader(doc);
 
       highlights.forEach((highlight, index) => {
         const isNewPage = index > 0 && index % highlightsPerPage === 0;
         
         if (isNewPage) {
           doc.addPage();
-          lastY = addPageWithBackground(doc);
+          lastY = addPageHeader(doc);
         }
 
         const tableBody = [
