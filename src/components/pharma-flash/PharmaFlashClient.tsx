@@ -28,7 +28,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import PinDialog from "./PinDialog";
-import { Pencil, Save, X, Calendar as CalendarIcon, Loader2 } from "lucide-react";
+import DownloadDialog from "./DownloadDialog";
+import { Pencil, Save, X, Calendar as CalendarIcon, Loader2, Download } from "lucide-react";
 import {
   Carousel,
   CarouselContent,
@@ -72,6 +73,7 @@ export default function PharmaFlashClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
+  const [isDownloadDialogOpen, setIsDownloadDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const { toast } = useToast();
@@ -200,11 +202,16 @@ export default function PharmaFlashClient() {
             <CalendarIcon className="h-5 w-5 text-muted-foreground" />
             Highlight for {format(selectedDate, "MMMM d, yyyy")}
           </h2>
-          {!isEditing && (
-             <Button variant="outline" size="sm" onClick={() => setIsPinDialogOpen(true)}>
-                <Pencil className="mr-2 h-4 w-4" /> Edit
-             </Button>
-          )}
+            <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setIsDownloadDialogOpen(true)}>
+                    <Download className="mr-2 h-4 w-4" /> Download
+                </Button>
+                {!isEditing && (
+                    <Button variant="outline" size="sm" onClick={() => setIsPinDialogOpen(true)}>
+                        <Pencil className="mr-2 h-4 w-4" /> Edit
+                    </Button>
+                )}
+            </div>
         </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSave)}>
@@ -274,6 +281,10 @@ export default function PharmaFlashClient() {
         open={isPinDialogOpen}
         onOpenChange={setIsPinDialogOpen}
         onSuccess={() => setIsEditing(true)}
+      />
+      <DownloadDialog
+        open={isDownloadDialogOpen}
+        onOpenChange={setIsDownloadDialogOpen}
       />
     </>
   );
