@@ -5,7 +5,7 @@ export default function Home() {
   return (
     <>
       <Image
-        src="https://storage.googleapis.com/prompt-gallery/prod/images/4cc21f45-3a3d-4927-9694-765f02f90a88/image.jpg"
+        src="https://storage.googleapis.com/prompt-gallery/prod/images/a83e0310-91c8-4729-a1b7-68b3d683b632/image.jpg"
         alt="A collection of pharmaceutical items including pills, syringes, and molecular structures on a light background."
         fill
         className="object-cover -z-10"
