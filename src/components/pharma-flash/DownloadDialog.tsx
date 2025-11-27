@@ -77,30 +77,45 @@ export default function DownloadDialog({
           title: "No Data Found",
           description: "No drug highlights found in the selected date range.",
         });
+        setIsDownloading(false);
         return;
       }
 
       const doc = new jsPDF();
-      
-      const addPageContent = (data: DrugHighlight & { id: string }) => {
+      const highlightsPerPage = 4;
+      let lastY = 0;
+
+      const addPageHeader = () => {
         doc.setFontSize(20);
         doc.text("Department of Pharmacology", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
         doc.setFontSize(16);
         doc.text("भेषजगुण विज्ञान विभाग", doc.internal.pageSize.getWidth() / 2, 30, { align: 'center' });
+        lastY = 35; // Reset Y position for content
+      };
+      
+      addPageHeader();
+
+      highlights.forEach((highlight, index) => {
+        const isNewPage = index % highlightsPerPage === 0 && index > 0;
+        if (isNewPage) {
+          doc.addPage();
+          addPageHeader();
+        }
 
         autoTable(doc, {
             head: [[
-                { content: format(new Date(data.id.replace(/-/g, '/')), "d-MMMM-yyyy"), styles: { halign: 'left', fontStyle: 'bold' } },
+                { content: format(new Date(highlight.id.replace(/-/g, '/')), "d-MMMM-yyyy"), styles: { halign: 'left', fontStyle: 'bold' } },
                 { content: 'Daily Drug Highlight', styles: { halign: 'center', fontStyle: 'bold' } }
             ]],
             body: [
-                ['Drug of the Day', data.drugName],
-                ['Class', data.drugClass],
-                ['Mechanism of action', data.mechanism],
-                ['Uses', data.uses],
-                ['Side Effects', data.sideEffects],
+                ['Drug of the Day', highlight.drugName],
+                ['Class', highlight.drugClass],
+                ['Mechanism of action', highlight.mechanism],
+                ['Uses', highlight.uses],
+                ['Side Effects', highlight.sideEffects],
+                ['Fun-fact', highlight.funFact],
             ],
-            startY: 40,
+            startY: lastY + 5,
             theme: 'grid',
             styles: {
                 font: 'helvetica',
@@ -110,47 +125,18 @@ export default function DownloadDialog({
             headStyles: {
                 fillColor: [255, 255, 255],
                 textColor: [0, 0, 0],
-                fontSize: 12,
+                fontSize: 10,
             },
             bodyStyles: {
                 fillColor: [255, 255, 255],
                 textColor: [0, 0, 0],
-                fontSize: 11,
-            },
-            alternateRowStyles: {
-                fillColor: [255, 255, 255],
+                fontSize: 9,
             },
             columnStyles: {
                 0: { fontStyle: 'bold' }
             }
         });
-
-        const lastTable = (doc as any).lastAutoTable;
-        autoTable(doc, {
-            body: [['Fun-fact', data.funFact]],
-            startY: lastTable.finalY + 5,
-            theme: 'grid',
-            styles: {
-                font: 'helvetica',
-                lineWidth: 0.1,
-                lineColor: [0, 0, 0],
-            },
-            bodyStyles: {
-                fillColor: [255, 255, 255],
-                textColor: [0, 0, 0],
-                fontSize: 11,
-            },
-            columnStyles: {
-                0: { fontStyle: 'bold' }
-            }
-        });
-      };
-
-      highlights.forEach((highlight, index) => {
-        if (index > 0) {
-          doc.addPage();
-        }
-        addPageContent(highlight);
+        lastY = (doc as any).lastAutoTable.finalY;
       });
 
       doc.save(`pharmacology-highlights-${startDate}-to-${endDate}.pdf`);
