@@ -84,10 +84,13 @@ export default function DownloadDialog({
       }
 
       const doc = new jsPDF();
+      doc.setFont("times"); // Set font for the entire document
+
       const highlightsPerPage = 4;
       let lastY = 0;
 
       const addPageHeader = (docInstance: jsPDF) => {
+        docInstance.setFont("times", "normal");
         docInstance.setFontSize(20);
         docInstance.text("Department of Pharmacology", docInstance.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
         docInstance.setFontSize(16);
@@ -119,7 +122,7 @@ export default function DownloadDialog({
             startY: lastY + 5,
             theme: 'grid',
             styles: {
-                font: 'helvetica',
+                font: 'times',
                 lineWidth: 0.1,
                 lineColor: [0, 0, 0],
                 fontSize: 9,
