@@ -83,22 +83,66 @@ export default function DownloadDialog({
       const doc = new jsPDF();
       
       const addPageContent = (data: DrugHighlight & { id: string }) => {
+        doc.setFontSize(20);
+        doc.text("Department of Pharmacology", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+        doc.setFontSize(16);
+        doc.text("भेषजगुण विज्ञान विभाग", doc.internal.pageSize.getWidth() / 2, 30, { align: 'center' });
+
         autoTable(doc, {
-            head: [['Field', 'Detail']],
+            head: [[
+                { content: format(new Date(data.id.replace(/-/g, '/')), "d-MMMM-yyyy"), styles: { halign: 'left', fontStyle: 'bold' } },
+                { content: 'Daily Drug Highlight', styles: { halign: 'center', fontStyle: 'bold' } }
+            ]],
             body: [
-                ['Date', format(new Date(data.id.replace(/-/g, '/')), "MMMM d, yyyy")],
                 ['Drug of the Day', data.drugName],
-                ['Drug Class', data.drugClass],
-                ['Mechanism of Action', data.mechanism],
-                ['Common Uses', data.uses],
+                ['Class', data.drugClass],
+                ['Mechanism of action', data.mechanism],
+                ['Uses', data.uses],
                 ['Side Effects', data.sideEffects],
-                ['Fun Fact', data.funFact],
             ],
-            didDrawPage: (data) => {
-              doc.setFontSize(18);
-              doc.text("Department of Pharmacology", 14, 22);
+            startY: 40,
+            theme: 'grid',
+            styles: {
+                font: 'helvetica',
+                lineWidth: 0.1,
+                lineColor: [0, 0, 0],
             },
-            margin: { top: 30 }
+            headStyles: {
+                fillColor: [255, 255, 255],
+                textColor: [0, 0, 0],
+                fontSize: 12,
+            },
+            bodyStyles: {
+                fillColor: [255, 255, 255],
+                textColor: [0, 0, 0],
+                fontSize: 11,
+            },
+            alternateRowStyles: {
+                fillColor: [255, 255, 255],
+            },
+            columnStyles: {
+                0: { fontStyle: 'bold' }
+            }
+        });
+
+        const lastTable = (doc as any).lastAutoTable;
+        autoTable(doc, {
+            body: [['Fun-fact', data.funFact]],
+            startY: lastTable.finalY + 5,
+            theme: 'grid',
+            styles: {
+                font: 'helvetica',
+                lineWidth: 0.1,
+                lineColor: [0, 0, 0],
+            },
+            bodyStyles: {
+                fillColor: [255, 255, 255],
+                textColor: [0, 0, 0],
+                fontSize: 11,
+            },
+            columnStyles: {
+                0: { fontStyle: 'bold' }
+            }
         });
       };
 
