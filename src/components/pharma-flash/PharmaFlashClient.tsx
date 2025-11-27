@@ -241,7 +241,7 @@ export default function PharmaFlashClient() {
                                         )}
                                     />
                                 ) : (
-                                    <p className="text-muted-foreground min-h-[2.5rem] flex items-center whitespace-pre-wrap font-body">
+                                    <p className="text-foreground text-base min-h-[2.5rem] flex items-center whitespace-pre-wrap font-body">
                                         {(drugData && drugData[field.key]) || "No data available."}
                                     </p>
                                 )}
