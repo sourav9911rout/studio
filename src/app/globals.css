@@ -4,9 +4,9 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%; /* #FAFAFA */
+    --background: 255 60% 97%; /* Off Violet */
     --foreground: 222.2 84% 4.9%;
-    --card: 60 56% 91%; /* #F5F5DC */
+    --card: 255 60% 92%; /* Lighter Violet */
     --card-foreground: 222.2 84% 4.9%;
     --popover: 60 56% 91%;
     --popover-foreground: 222.2 84% 4.9%;
