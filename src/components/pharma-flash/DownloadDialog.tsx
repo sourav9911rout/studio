@@ -91,8 +91,7 @@ export default function DownloadDialog({
         docInstance.setFontSize(20);
         docInstance.text("Department of Pharmacology", docInstance.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
         docInstance.setFontSize(16);
-        docInstance.text("भेषजगुण विज्ञान विभाग", docInstance.internal.pageSize.getWidth() / 2, 30, { align: 'center' });
-        return 35; // Return the Y position after the header
+        return 30; // Return the Y position after the header
       };
       
       lastY = addPageHeader(doc);
