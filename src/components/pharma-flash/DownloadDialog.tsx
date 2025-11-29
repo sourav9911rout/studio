@@ -44,6 +44,13 @@ export default function DownloadDialog({
   const { toast } = useToast();
   const firestore = useFirestore();
 
+  // A more robust way to parse YYYY-MM-DD to a Date object, avoiding timezone issues.
+  const parseDateString = (dateStr: string): Date => {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    // Note: month is 0-indexed in JavaScript Date constructor (0 for January)
+    return new Date(year, month - 1, day);
+  };
+
   const handleDownload = async () => {
     if (!range || !range.from || !range.to) {
       toast({
@@ -84,7 +91,7 @@ export default function DownloadDialog({
       }
 
       const doc = new jsPDF();
-      doc.setFont("times"); // Set font for the entire document
+      doc.setFont("times", "normal"); // Set font for the entire document
 
       const highlightsPerPage = 4;
       let lastY = 0;
@@ -105,9 +112,12 @@ export default function DownloadDialog({
           doc.addPage();
           lastY = addPageHeader(doc);
         }
+        
+        // Use the robust date parsing function here
+        const highlightDate = parseDateString(highlight.id);
 
         const tableBody = [
-            ['Date', format(new Date(highlight.id.replace(/-/g, '/')), "d-MMMM-yyyy")],
+            ['Date', format(highlightDate, "d-MMMM-yyyy")],
             ['Drug of the Day', highlight.drugName],
             ['Class', highlight.drugClass],
             ['Mechanism of action', highlight.mechanism],
@@ -160,7 +170,7 @@ export default function DownloadDialog({
     }
   };
 
-  const hasDataModifier = Array.from(datesWithData).map(dateStr => new Date(dateStr.replace(/-/g, '/')));
+  const hasDataModifier = Array.from(datesWithData).map(dateStr => parseDateString(dateStr));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
