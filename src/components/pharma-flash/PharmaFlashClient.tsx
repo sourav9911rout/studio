@@ -38,17 +38,15 @@ import {
 } from "@/components/ui/carousel";
 import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
 import { cn } from "@/lib/utils";
-import dynamic from 'next/dynamic';
-
-const QuillEditor = dynamic(() => import('react-quill'), { ssr: false });
+import { Textarea } from "../ui/textarea";
 
 const drugSchema = z.object({
   drugName: z.string().min(1, "Drug name is required."),
   drugClass: z.string().min(1, "Class is required."),
-  mechanism: z.string().min(30, "Mechanism is required."),
-  uses: z.string().min(30, "Uses are required."),
-  sideEffects: z.string().min(30, "Side effects are required."),
-  funFact: z.string().min(30, "Fun fact is required."),
+  mechanism: z.string().min(1, "Mechanism is required."),
+  uses: z.string().min(1, "Uses are required."),
+  sideEffects: z.string().min(1, "Side effects are required."),
+  funFact: z.string().min(1, "Fun fact is required."),
 });
 
 const formFields: { key: keyof DrugHighlight, label: string, isTextarea: boolean }[] = [
@@ -182,12 +180,6 @@ export default function PharmaFlashClient() {
     return index > -1 ? index : datesForNavigation.length - 1;
   }, [datesForNavigation]);
   
-  const quillModules = {
-    toolbar: [
-      ['bold', 'italic', 'underline'],
-    ],
-  };
-
   return (
     <>
       <div className="p-6">
@@ -276,15 +268,7 @@ export default function PharmaFlashClient() {
                                             <FormItem>
                                             <FormControl>
                                                 {field.isTextarea ? (
-                                                  <div className="bg-white text-black rounded-md">
-                                                    <QuillEditor
-                                                      value={formFieldRender.value}
-                                                      onChange={formFieldRender.onChange}
-                                                      modules={quillModules}
-                                                      theme="snow"
-                                                      className="min-h-[100px] font-body"
-                                                    />
-                                                  </div>
+                                                    <Textarea placeholder={`Enter ${field.label.toLowerCase()}...`} {...formFieldRender} className="font-body min-h-[100px]" />
                                                 ) : (
                                                     <Input placeholder={`Enter ${field.label.toLowerCase()}...`} {...formFieldRender} className="font-body" />
                                                 )}
@@ -295,9 +279,10 @@ export default function PharmaFlashClient() {
                                     />
                                 ) : (
                                     <div
-                                        className="text-primary text-base min-h-[2.5rem] flex items-center whitespace-pre-wrap font-body prose"
-                                        dangerouslySetInnerHTML={{ __html: (drugData && drugData[field.key]) || "No data available." }}
-                                    />
+                                        className="text-primary text-base min-h-[2.5rem] flex items-center whitespace-pre-wrap font-body"
+                                    >
+                                     {(drugData && drugData[field.key]) || "No data available."}
+                                    </div>
                                 )}
                                 </TableCell>
                             </TableRow>
