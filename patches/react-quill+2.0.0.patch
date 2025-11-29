@@ -1,17 +1,6 @@
-diff --git a/node_modules/react-quill/lib/index.js b/node_modules/react-quill/lib/index.js
-index 9b59628..f313f81 100644
 --- a/node_modules/react-quill/lib/index.js
 +++ b/node_modules/react-quill/lib/index.js
-@@ -7,7 +7,7 @@
- var _react = _interopRequireDefault(require('react'));
- 
- var _reactDom = _interopRequireDefault(require('react-dom'));
--
-+var findDOMNode = function findDOMNode(instance) { return _reactDom.default.findDOMNode(instance); };
- var _quill = _interopRequireDefault(require('quill'));
- 
- var _propTypes = _interopRequireDefault(require('prop-types'));
-@@ -1071,7 +1071,7 @@
+@@ -493,7 +493,7 @@
  	},
  
  	getEditor: function getEditor() {
@@ -19,13 +8,31 @@ index 9b59628..f313f81 100644
 +		return this.quill;
  	},
  
- 	getEditingArea: function getEditingArea() {
-@@ -1080,7 +1080,7 @@
+ 	focus: function focus() {
+@@ -501,7 +501,7 @@
+ 	},
  
- 	getEditingAreaElement: function getEditingAreaElement() {
- 		var editingArea = this.getEditingArea();
--		return editingArea.firstChild;
-+		return editingArea;
+ 	blur: function blur() {
+-		this.selection = this.getEditor().getSelection();
++		this.selection = this.quill.getSelection();
+ 		this.quill.blur();
+ 	},
+ 
+@@ -510,7 +510,7 @@
+ 	},
+ 
+ 	getEditingArea: function getEditingArea() {
+-		return _reactDom2.default.findDOMNode(this.editingArea);
++		return this.editingArea.getEditingArea();
  	},
  
  	/*
+@@ -628,7 +628,7 @@
+ 			value: this.getEditor().getContents()
+ 		};
+ 		// Check for undefined class, and add the correct class name.
+-		if (this.editingArea.className === 'ql-container ql-snow') {
++		if (this.editingArea.editingArea && this.editingArea.editingArea.className === 'ql-container ql-snow') {
+ 			this.editingArea.className = this.props.className ? this.props.className : '';
+ 		}
+ 	},
