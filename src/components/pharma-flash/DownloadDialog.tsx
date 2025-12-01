@@ -135,13 +135,15 @@ export default function DownloadDialog({
                 lineWidth: 0.1,
                 lineColor: [0, 0, 0],
                 fontSize: 9,
+                cellPadding: 2,
             },
             bodyStyles: {
                 fillColor: [255, 255, 255],
                 textColor: [0, 0, 0],
             },
             columnStyles: {
-                0: { fontStyle: 'bold' }
+                0: { fontStyle: 'bold', cellWidth: 50 },
+                1: { cellWidth: 'auto' }
             },
             didDrawPage: (data) => {
               lastY = data.cursor?.y ?? lastY;
