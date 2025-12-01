@@ -279,9 +279,10 @@ export default function PharmaFlashClient() {
                                     />
                                 ) : (
                                     <div
-                                        className="text-primary text-base min-h-[2.5rem] flex items-center whitespace-pre-wrap font-body prose"
-                                        dangerouslySetInnerHTML={{ __html: (drugData && drugData[field.key]) || "No data available." }}
-                                    />
+                                        className="text-primary text-base min-h-[2.5rem] py-2 whitespace-pre-wrap font-body"
+                                    >
+                                        {(drugData && drugData[field.key]) || "No data available."}
+                                    </div>
                                 )}
                                 </TableCell>
                             </TableRow>
