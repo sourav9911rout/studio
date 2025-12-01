@@ -4,25 +4,25 @@
 
 @layer base {
   :root {
-    --background: 60 56% 91%; /* Light Yellow */
+    --background: 210 20% 98%;
     --foreground: 222.2 84% 4.9%;
-    --card: 60 56% 86%; /* Slightly Darker Yellow */
+    --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
-    --popover: 60 56% 91%;
+    --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 215 50% 40%; /* Marine Blue */
+    --primary: 214 89% 52%;
     --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 260 80% 90%; /* Light Violet */
+    --accent: 214 89% 95%;
     --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 82.7%; /* #D3D3D3 */
-    --input: 0 0% 89.8%;
-    --ring: 215 50% 40%;
+    --border: 210 20% 85%;
+    --input: 210 20% 85%;
+    --ring: 214 89% 52%;
     --radius: 0.5rem;
     
     --chart-1: 12 76% 61%;
@@ -38,19 +38,19 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 215 50% 40%; /* Marine Blue */
+    --primary: 214 89% 52%;
     --primary-foreground: 210 40% 98%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 260 80% 90%; /* Light Violet */
+    --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 215 50% 40%;
+    --ring: 214 89% 52%;
 
     --chart-1: 220 70% 50%;
     --chart-2: 309 50% 55%;
