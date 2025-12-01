@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format, isToday, eachDayOfInterval } from "date-fns";
 import { doc, getDoc, collection, getDocs, query } from "firebase/firestore";
-import { useFirestore, useUser } from "@/firebase";
+import { useFirestore, useUser, useAuth } from "@/firebase";
 import { setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import type { DrugHighlight } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -52,6 +52,7 @@ import {
 import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
 import { cn } from "@/lib/utils";
 import { Textarea } from "../ui/textarea";
+import { ThemeToggle } from "../ThemeToggle";
 
 const drugSchema = z.object({
   drugName: z.string().min(1, "Drug name is required."),
@@ -94,6 +95,7 @@ export default function PharmaFlashClient() {
 
   const { toast } = useToast();
   const firestore = useFirestore();
+  const auth = useAuth();
   const { user, isUserLoading } = useUser();
 
   const form = useForm<DrugHighlight>({
@@ -105,9 +107,9 @@ export default function PharmaFlashClient() {
 
   useEffect(() => {
     if (firestore && user === null && !isUserLoading) {
-      initiateAnonymousSignIn(useAuth());
+      initiateAnonymousSignIn(auth);
     }
-  }, [firestore, user, isUserLoading]);
+  }, [firestore, user, isUserLoading, auth]);
   
   useEffect(() => {
     if (!firestore) return;
@@ -230,10 +232,13 @@ export default function PharmaFlashClient() {
   
   return (
     <>
-      <div className="p-6">
+      <div className="p-6 relative">
         <h1 className="text-3xl font-headline font-bold text-center tracking-tight text-primary">Department of Pharmacology</h1>
         <p className="text-center text-xl font-headline text-primary mt-1 font-bold">भेषजगुण विज्ञान विभाग</p>
         <p className="text-center text-primary text-lg mt-2 font-headline">Your daily dose of pharmacology.</p>
+        <div className="absolute top-4 right-4">
+          <ThemeToggle />
+        </div>
       </div>
       
       <div className="px-12 pb-2">
