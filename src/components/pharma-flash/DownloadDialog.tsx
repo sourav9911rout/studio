@@ -44,10 +44,8 @@ export default function DownloadDialog({
   const { toast } = useToast();
   const firestore = useFirestore();
 
-  // A more robust way to parse YYYY-MM-DD to a Date object, explicitly using UTC to avoid timezone issues.
   const parseDateString = (dateStr: string): Date => {
     const [year, month, day] = dateStr.split('-').map(Number);
-    // Note: month is 0-indexed in JavaScript Date constructor (0 for January)
     return new Date(Date.UTC(year, month - 1, day));
   };
 
@@ -91,7 +89,7 @@ export default function DownloadDialog({
       }
 
       const doc = new jsPDF();
-      doc.setFont("times", "normal"); // Set font for the entire document
+      doc.setFont("times", "normal"); 
 
       const highlightsPerPage = 4;
       let lastY = 0;
@@ -100,7 +98,7 @@ export default function DownloadDialog({
         docInstance.setFont("times", "normal");
         docInstance.setFontSize(20);
         docInstance.text("Department of Pharmacology", docInstance.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
-        return 30; // Return the Y position after the header
+        return 30;
       };
       
       lastY = addPageHeader(doc);
@@ -113,7 +111,6 @@ export default function DownloadDialog({
           lastY = addPageHeader(doc);
         }
         
-        // Use the robust date parsing function here
         const highlightDate = parseDateString(highlight.id);
 
         const tableBody = [
