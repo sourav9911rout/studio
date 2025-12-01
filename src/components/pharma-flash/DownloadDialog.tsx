@@ -88,66 +88,92 @@ export default function DownloadDialog({
         setIsDownloading(false);
         return;
       }
-
+      
       const doc = new jsPDF();
-      
-      const highlightsPerPage = 4;
-      let lastY = 0;
-      
-      const addPageHeader = (docInstance: jsPDF) => {
-        docInstance.setFont("times", "normal");
+      doc.setFont("times", "normal");
+      const pageHeight = doc.internal.pageSize.height;
+      const pageWidth = doc.internal.pageSize.width;
+      const margin = 15;
+      let cursorY = 0;
+
+      const addHeader = (docInstance: jsPDF) => {
+        docInstance.setFont("times", "bold");
         docInstance.setFontSize(20);
-        docInstance.text("Department of Pharmacology", docInstance.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
-        return 30;
+        docInstance.text("Department of Pharmacology", pageWidth / 2, 20, { align: 'center' });
+        docInstance.setFontSize(14);
+        docInstance.setFont("times", "normal");
+        docInstance.text("भेषजगुण विज्ञान विभाग", pageWidth / 2, 28, { align: 'center' });
+        docInstance.setLineWidth(0.5);
+        docInstance.line(margin, 35, pageWidth - margin, 35);
+        return 45; // New cursor Y position
       };
-      
-      lastY = addPageHeader(doc);
+
+      const addHighlight = (docInstance: jsPDF, highlight: DrugHighlight & { id: string }, startY: number): number => {
+          let currentY = startY;
+
+          const highlightDate = parseDateString(highlight.id);
+          docInstance.setFontSize(12);
+          docInstance.setFont("times", "bold");
+          docInstance.text("Date:", margin, currentY);
+          docInstance.setFont("times", "normal");
+          docInstance.text(format(highlightDate, "MMMM d, yyyy"), margin + 15, currentY);
+          currentY += 8;
+
+          const fieldToLabel: { key: keyof DrugHighlight, label: string }[] = [
+              { key: 'drugName', label: 'Drug of the Day' },
+              { key: 'drugClass', label: 'Drug Class' },
+              { key: 'mechanism', label: 'Mechanism of Action' },
+              { key: 'uses', label: 'Common Uses' },
+              { key: 'sideEffects', label: 'Side Effects' },
+              { key: 'funFact', label: 'Fun Fact' },
+          ];
+
+          fieldToLabel.forEach(item => {
+              docInstance.setFontSize(11);
+              docInstance.setFont("times", "bold");
+              docInstance.text(item.label + ":", margin, currentY);
+              
+              docInstance.setFont("times", "normal");
+              const text = highlight[item.key] || "";
+              const splitText = docInstance.splitTextToSize(text, pageWidth - margin * 2 - 45);
+              
+              docInstance.text(splitText, margin + 45, currentY, {
+                align: 'left',
+                lineHeightFactor: 1.2
+              });
+              
+              const textHeight = docInstance.getTextDimensions(splitText).h;
+              currentY += textHeight + 4; // Add some padding
+          });
+
+          return currentY + 5; // Return Y for next element
+      }
+
+      cursorY = addHeader(doc);
 
       highlights.forEach((highlight, index) => {
-        const isNewPage = index > 0 && index % highlightsPerPage === 0;
-        
-        if (isNewPage) {
-          doc.addPage();
-          lastY = addPageHeader(doc);
+        // Estimate height to check if new page is needed. This is a simple approximation.
+        const estimatedHeight = 100; // A rough guess for height per entry
+        if (cursorY + estimatedHeight > pageHeight - margin) {
+            doc.addPage();
+            cursorY = addHeader(doc);
         }
+
+        cursorY = addHighlight(doc, highlight, cursorY);
         
-        const highlightDate = parseDateString(highlight.id);
-
-        const tableBody = [
-            ['Date', format(highlightDate, "d-MMMM-yyyy")],
-            ['Drug of the Day', highlight.drugName],
-            ['Class', highlight.drugClass],
-            ['Mechanism of action', highlight.mechanism],
-            ['Uses', highlight.uses],
-            ['Side Effects', highlight.sideEffects],
-            ['Fun-fact', highlight.funFact],
-        ];
-
-        autoTable(doc, {
-            body: tableBody,
-            startY: lastY + 5,
-            theme: 'grid',
-            styles: {
-                font: 'times', // Use a standard font like 'times'
-                lineWidth: 0.1,
-                lineColor: [0, 0, 0],
-                fontSize: 9,
-                cellPadding: 2,
-            },
-            bodyStyles: {
-                fillColor: [255, 255, 255],
-                textColor: [0, 0, 0],
-            },
-            columnStyles: {
-                0: { fontStyle: 'bold', cellWidth: 50 },
-                1: { cellWidth: 'auto' }
-            },
-            didDrawPage: (data) => {
-              lastY = data.cursor?.y ?? lastY;
+        // Add a separator line between entries if it's not the last one
+        if (index < highlights.length - 1) {
+            if (cursorY + 10 > pageHeight - margin) {
+                doc.addPage();
+                cursorY = addHeader(doc);
+            } else {
+                doc.setLineWidth(0.2);
+                doc.line(margin, cursorY, pageWidth - margin, cursorY);
+                cursorY += 10;
             }
-        });
-        lastY = (doc as any).lastAutoTable.finalY;
+        }
       });
+
 
       doc.save(`pharmacology-highlights-${startDate}-to-${endDate}.pdf`);
 
