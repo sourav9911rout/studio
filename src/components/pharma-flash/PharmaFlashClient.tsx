@@ -104,8 +104,8 @@ export default function PharmaFlashClient() {
   const dateString = useMemo(() => format(selectedDate, "yyyy-MM-dd"), [selectedDate]);
 
   useEffect(() => {
-    if (firestore && !user && !isUserLoading) {
-      initiateAnonymousSignIn();
+    if (firestore && user === null && !isUserLoading) {
+      initiateAnonymousSignIn(useAuth());
     }
   }, [firestore, user, isUserLoading]);
   
@@ -221,6 +221,12 @@ export default function PharmaFlashClient() {
     const index = datesForNavigation.findIndex(d => format(d, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd'));
     return index > -1 ? index : datesForNavigation.length - 1;
   }, [datesForNavigation]);
+
+  const parseDateString = (dateStr: string): Date => {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(Date.UTC(year, month - 1, day));
+  };
+  const hasDataModifier = Array.from(datesWithData).map(dateStr => parseDateString(dateStr));
   
   return (
     <>
@@ -283,6 +289,8 @@ export default function PharmaFlashClient() {
               onSelect={handleDateSelect}
               disabled={{ before: new Date("2025-10-25"), after: new Date() }}
               initialFocus
+              modifiers={{ hasData: hasDataModifier }}
+              modifiersStyles={{ hasData: { backgroundColor: "hsl(var(--primary) / 0.2)",  border: "1px solid hsl(var(--primary) / 0.5)"} }}
             />
           </PopoverContent>
         </Popover>
@@ -405,5 +413,3 @@ export default function PharmaFlashClient() {
     </>
   );
 }
-
-    
