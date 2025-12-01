@@ -4,10 +4,10 @@ import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { format, subDays, eachDayOfInterval, isToday } from "date-fns";
-import { doc, getDoc, collection, getDocs, query } from "firebase/firestore";
+import { format, isToday, eachDayOfInterval } from "date-fns";
+import { doc, getDoc, collection, getDocs, query, deleteDoc } from "firebase/firestore";
 import { useAuth, useFirestore, useUser } from "@/firebase";
-import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import type { DrugHighlight } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,11 +24,22 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import PinDialog from "./PinDialog";
 import DownloadDialog from "./DownloadDialog";
-import { Pencil, Save, X, Calendar as CalendarIcon, Loader2, Download } from "lucide-react";
+import { Pencil, Save, X, Calendar as CalendarIcon, Loader2, Download, Trash2 } from "lucide-react";
 import {
   Carousel,
   CarouselContent,
@@ -166,6 +177,28 @@ export default function PharmaFlashClient() {
     });
   };
 
+  const handleDelete = () => {
+    if (!firestore) return;
+    const docRef = doc(firestore, "drugHighlights", dateString);
+    
+    deleteDocumentNonBlocking(docRef);
+
+    // Optimistically update UI
+    setDrugData(null);
+    form.reset(emptyDrugData);
+    setDatesWithData(prev => {
+      const newDates = new Set(prev);
+      newDates.delete(dateString);
+      return newDates;
+    });
+    setIsEditing(false);
+
+    toast({
+      title: "Deleted",
+      description: `Drug highlight for ${dateString} has been deleted.`,
+    });
+  };
+
   const handleCancelEdit = () => {
     if (drugData) {
       form.reset(drugData);
@@ -293,6 +326,26 @@ export default function PharmaFlashClient() {
             </div>
             {isEditing && (
                 <div className="flex justify-end gap-2 mt-4">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button type="button" variant="destructive">
+                           <Trash2 className="mr-2 h-4 w-4" /> Delete All Data
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the
+                            drug highlight data for {format(selectedDate, "MMMM d, yyyy")}.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDelete}>Confirm Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                     <Button type="button" variant="ghost" onClick={handleCancelEdit}>
                         <X className="mr-2 h-4 w-4" /> Cancel
                     </Button>
