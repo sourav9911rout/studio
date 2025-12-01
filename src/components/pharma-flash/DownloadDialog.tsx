@@ -46,8 +46,8 @@ export default function DownloadDialog({
 
   const parseDateString = (dateStr: string): Date => {
     const [year, month, day] = dateStr.split('-').map(Number);
-    // Create date in UTC to avoid timezone issues
-    return new Date(Date.UTC(year, month - 1, day));
+    // Create date in UTC to avoid timezone issues with date-fns format
+    return new Date(year, month - 1, day);
   };
 
   const handleDownload = async () => {
@@ -88,93 +88,50 @@ export default function DownloadDialog({
         setIsDownloading(false);
         return;
       }
-      
+
       const doc = new jsPDF();
+
+      // Add a title to the document
+      doc.setFontSize(20);
+      doc.setFont("times", "bold");
+      doc.text("Department of Pharmacology", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
       doc.setFont("times", "normal");
-      const pageHeight = doc.internal.pageSize.height;
-      const pageWidth = doc.internal.pageSize.width;
-      const margin = 15;
-      let cursorY = 0;
-
-      const addHeader = (docInstance: jsPDF) => {
-        docInstance.setFont("times", "bold");
-        docInstance.setFontSize(20);
-        docInstance.text("Department of Pharmacology", pageWidth / 2, 20, { align: 'center' });
-        docInstance.setFontSize(14);
-        docInstance.setFont("times", "normal");
-        docInstance.text("भेषजगुण विज्ञान विभाग", pageWidth / 2, 28, { align: 'center' });
-        docInstance.setLineWidth(0.5);
-        docInstance.line(margin, 35, pageWidth - margin, 35);
-        return 45; // New cursor Y position
-      };
-
-      const addHighlight = (docInstance: jsPDF, highlight: DrugHighlight & { id: string }, startY: number): number => {
-          let currentY = startY;
-
-          const highlightDate = parseDateString(highlight.id);
-          docInstance.setFontSize(12);
-          docInstance.setFont("times", "bold");
-          docInstance.text("Date:", margin, currentY);
-          docInstance.setFont("times", "normal");
-          docInstance.text(format(highlightDate, "MMMM d, yyyy"), margin + 15, currentY);
-          currentY += 8;
-
-          const fieldToLabel: { key: keyof DrugHighlight, label: string }[] = [
-              { key: 'drugName', label: 'Drug of the Day' },
-              { key: 'drugClass', label: 'Drug Class' },
-              { key: 'mechanism', label: 'Mechanism of Action' },
-              { key: 'uses', label: 'Common Uses' },
-              { key: 'sideEffects', label: 'Side Effects' },
-              { key: 'funFact', label: 'Fun Fact' },
-          ];
-
-          fieldToLabel.forEach(item => {
-              docInstance.setFontSize(11);
-              docInstance.setFont("times", "bold");
-              docInstance.text(item.label + ":", margin, currentY);
-              
-              docInstance.setFont("times", "normal");
-              const text = highlight[item.key] || "";
-              const splitText = docInstance.splitTextToSize(text, pageWidth - margin * 2 - 45);
-              
-              docInstance.text(splitText, margin + 45, currentY, {
-                align: 'left',
-                lineHeightFactor: 1.2
-              });
-              
-              const textHeight = docInstance.getTextDimensions(splitText).h;
-              currentY += textHeight + 4; // Add some padding
-          });
-
-          return currentY + 5; // Return Y for next element
-      }
-
-      cursorY = addHeader(doc);
-
-      highlights.forEach((highlight, index) => {
-        // Estimate height to check if new page is needed. This is a simple approximation.
-        const estimatedHeight = 100; // A rough guess for height per entry
-        if (cursorY + estimatedHeight > pageHeight - margin) {
-            doc.addPage();
-            cursorY = addHeader(doc);
-        }
-
-        cursorY = addHighlight(doc, highlight, cursorY);
-        
-        // Add a separator line between entries if it's not the last one
-        if (index < highlights.length - 1) {
-            if (cursorY + 10 > pageHeight - margin) {
-                doc.addPage();
-                cursorY = addHeader(doc);
-            } else {
-                doc.setLineWidth(0.2);
-                doc.line(margin, cursorY, pageWidth - margin, cursorY);
-                cursorY += 10;
-            }
-        }
+      doc.setFontSize(14);
+      doc.text("भेषजगुण विज्ञान विभाग", doc.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
+      
+      const tableData = highlights.flatMap(highlight => {
+        const highlightDate = format(parseDateString(highlight.id), "MMMM d, yyyy");
+        return [
+          [{ content: `Date: ${highlightDate}`, colSpan: 2, styles: { fontStyle: 'bold', fillColor: [230, 230, 230] } }],
+          ['Drug of the Day', highlight.drugName],
+          ['Drug Class', highlight.drugClass],
+          ['Mechanism of Action', highlight.mechanism],
+          ['Common Uses', highlight.uses],
+          ['Side Effects', highlight.sideEffects],
+          ['Fun Fact', highlight.funFact],
+        ];
       });
 
-
+      autoTable(doc, {
+        startY: 35,
+        head: [['Field', 'Information']],
+        body: tableData,
+        theme: 'grid',
+        styles: {
+          font: "times", // Use a standard font
+        },
+        columnStyles: {
+          0: { fontStyle: 'bold', cellWidth: 50 },
+          1: { cellWidth: 'auto' },
+        },
+        didParseCell: function (data) {
+          // This ensures that newlines in the data are respected
+          if (typeof data.cell.raw === 'string') {
+            data.cell.text = data.cell.raw.split('\n');
+          }
+        }
+      });
+      
       doc.save(`pharmacology-highlights-${startDate}-to-${endDate}.pdf`);
 
       toast({
