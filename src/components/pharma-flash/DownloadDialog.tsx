@@ -46,6 +46,7 @@ export default function DownloadDialog({
 
   const parseDateString = (dateStr: string): Date => {
     const [year, month, day] = dateStr.split('-').map(Number);
+    // Create date in UTC to avoid timezone issues
     return new Date(Date.UTC(year, month - 1, day));
   };
 
@@ -89,8 +90,7 @@ export default function DownloadDialog({
       }
 
       const doc = new jsPDF();
-      doc.setFont("times", "normal"); 
-
+      
       const highlightsPerPage = 4;
       let lastY = 0;
       
@@ -128,7 +128,7 @@ export default function DownloadDialog({
             startY: lastY + 5,
             theme: 'grid',
             styles: {
-                font: 'times',
+                font: 'times', // Use a standard font like 'times'
                 lineWidth: 0.1,
                 lineColor: [0, 0, 0],
                 fontSize: 9,
