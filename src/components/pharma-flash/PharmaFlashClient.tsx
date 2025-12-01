@@ -5,8 +5,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format, isToday, eachDayOfInterval } from "date-fns";
-import { doc, getDoc, collection, getDocs, query, deleteDoc } from "firebase/firestore";
-import { useAuth, useFirestore, useUser } from "@/firebase";
+import { doc, getDoc, collection, getDocs, query } from "firebase/firestore";
+import { useFirestore, useUser } from "@/firebase";
 import { setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import type { DrugHighlight } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import PinDialog from "./PinDialog";
@@ -88,10 +90,10 @@ export default function PharmaFlashClient() {
   const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
   const [isDownloadDialogOpen, setIsDownloadDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const { toast } = useToast();
   const firestore = useFirestore();
-  const auth = useAuth();
   const { user, isUserLoading } = useUser();
 
   const form = useForm<DrugHighlight>({
@@ -102,10 +104,10 @@ export default function PharmaFlashClient() {
   const dateString = useMemo(() => format(selectedDate, "yyyy-MM-dd"), [selectedDate]);
 
   useEffect(() => {
-    if (auth && !user && !isUserLoading) {
-      initiateAnonymousSignIn(auth);
+    if (firestore && !user && !isUserLoading) {
+      initiateAnonymousSignIn();
     }
-  }, [auth, user, isUserLoading]);
+  }, [firestore, user, isUserLoading]);
   
   useEffect(() => {
     if (!firestore) return;
@@ -207,6 +209,13 @@ export default function PharmaFlashClient() {
     }
     setIsEditing(false);
   }
+  
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setSelectedDate(date);
+      setIsCalendarOpen(false);
+    }
+  };
 
   const initialCarouselIndex = useMemo(() => {
     const index = datesForNavigation.findIndex(d => format(d, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd'));
@@ -221,7 +230,7 @@ export default function PharmaFlashClient() {
         <p className="text-center text-primary text-lg mt-2 font-headline">Your daily dose of pharmacology.</p>
       </div>
       
-      <div className="px-12 pb-4">
+      <div className="px-12 pb-2">
         <Carousel
           opts={{
             align: "start",
@@ -258,6 +267,27 @@ export default function PharmaFlashClient() {
           <CarouselNext />
         </Carousel>
       </div>
+      
+      <div className="flex justify-center pb-4">
+        <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <CalendarIcon className="h-4 w-4" />
+              Go to Date
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="center">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={handleDateSelect}
+              disabled={{ before: new Date("2025-10-25"), after: new Date() }}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+
 
       <div className="px-6 pb-6">
         <div className="flex justify-between items-center mb-4">
@@ -375,3 +405,5 @@ export default function PharmaFlashClient() {
     </>
   );
 }
+
+    
