@@ -44,11 +44,11 @@ export default function DownloadDialog({
   const { toast } = useToast();
   const firestore = useFirestore();
 
-  // A more robust way to parse YYYY-MM-DD to a Date object, avoiding timezone issues.
+  // A more robust way to parse YYYY-MM-DD to a Date object, explicitly using UTC to avoid timezone issues.
   const parseDateString = (dateStr: string): Date => {
     const [year, month, day] = dateStr.split('-').map(Number);
     // Note: month is 0-indexed in JavaScript Date constructor (0 for January)
-    return new Date(year, month - 1, day);
+    return new Date(Date.UTC(year, month - 1, day));
   };
 
   const handleDownload = async () => {
