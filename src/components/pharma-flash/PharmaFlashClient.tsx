@@ -284,8 +284,13 @@ export default function PharmaFlashClient() {
     Day: ({ date, ...props }) => {
       const formattedDate = format(date, 'yyyy-MM-dd');
       const drugName = drugDataMap.get(formattedDate);
+  
+      // Get the original Day component from react-day-picker to handle default rendering
+      const { Day: OriginalDay } = (props.components as any) || {};
 
-      const dayContent = (
+      const dayContent = OriginalDay ? (
+        <OriginalDay date={date} {...props} />
+      ) : (
         <div {...props.rootProps} >
             {format(date, 'd')}
         </div>
