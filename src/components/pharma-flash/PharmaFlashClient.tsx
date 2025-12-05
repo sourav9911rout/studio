@@ -306,7 +306,7 @@ export default function PharmaFlashClient() {
       const result = await getDrugInfo({ drugName });
 
       // Create a new object for the form, preserving the original drug name from the form
-      const newFormData = { ...result, drugName: form.getValues('drugName') };
+      const newFormData = { ...result, funFact: result.funFact || '', drugName: form.getValues('drugName') };
 
       if (mode === 'all') {
         form.reset(newFormData);
@@ -322,7 +322,7 @@ export default function PharmaFlashClient() {
             const isFieldBlank = !currentValues[field] || /^\s*$/.test(String(currentValues[field]));
             
             if (isFieldBlank) {
-                form.setValue(field, newFormData[field]);
+                form.setValue(field, newFormData[field as keyof typeof newFormData]);
             }
         }
       }
@@ -451,7 +451,8 @@ export default function PharmaFlashClient() {
               modifiers={{ hasData: hasDataModifier }}
               modifiersStyles={{
                 hasData: {
-                  fontWeight: 'bold'
+                  backgroundColor: 'hsl(var(--primary) / 0.2)',
+                  border: '1px solid hsl(var(--primary) / 0.5)',
                 },
               }}
             />
@@ -519,12 +520,14 @@ export default function PharmaFlashClient() {
                                           placeholder={`Enter ${field.label.toLowerCase()}...`}
                                           {...formFieldRender}
                                           className="font-body min-h-[100px]"
+                                          value={formFieldRender.value || ''}
                                         />
                                       ) : (
                                         <Input
                                           placeholder={`Enter ${field.label.toLowerCase()}...`}
                                           {...formFieldRender}
                                           className="font-body"
+                                          value={formFieldRender.value || ''}
                                         />
                                       )}
                                     </FormControl>
