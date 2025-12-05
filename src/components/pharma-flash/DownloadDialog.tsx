@@ -108,7 +108,7 @@ export default function DownloadDialog({
           ['Mechanism of Action', highlight.mechanism],
           ['Common Uses', highlight.uses],
           ['Side Effects', highlight.sideEffects],
-          ['Fun Fact', highlight.funFact],
+          ['Additional Information', highlight.additionalInformation],
         ];
       });
 

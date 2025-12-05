@@ -4,7 +4,6 @@ export type DrugHighlight = {
   mechanism: string;
   uses: string;
   sideEffects: string;
-  funFact: string;
   routeOfAdministration: string;
   dose: string;
   dosageForm: string;
@@ -12,4 +11,5 @@ export type DrugHighlight = {
   clinicalUses: string;
   contraindication: string;
   offLabelUse: string;
+  additionalInformation: string;
 };

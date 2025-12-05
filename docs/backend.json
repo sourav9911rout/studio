@@ -30,10 +30,6 @@
           "type": "string",
           "description": "Common side effects of the drug."
         },
-        "funFact": {
-          "type": "string",
-          "description": "A fun or interesting fact about the drug."
-        },
         "routeOfAdministration": {
           "type": "string",
           "description": "The route of administration for the drug."
@@ -61,6 +57,10 @@
         "offLabelUse": {
           "type": "string",
           "description": "Common off-label uses for the drug."
+        },
+        "additionalInformation": {
+          "type": "string",
+          "description": "Additional interesting information or a fun fact about the drug."
         }
       },
       "required": [
@@ -70,14 +70,14 @@
         "mechanism",
         "uses",
         "sideEffects",
-        "funFact",
         "routeOfAdministration",
         "dose",
         "dosageForm",
         "halfLife",
         "clinicalUses",
         "contraindication",
-        "offLabelUse"
+        "offLabelUse",
+        "additionalInformation"
       ]
     }
   },
