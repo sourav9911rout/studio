@@ -5,8 +5,8 @@ import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { format, isToday, eachDayOfInterval, parse } from "date-fns";
-import { doc, getDoc, collection, getDocs, query } from "firebase/firestore";
+import { format, isToday, eachDayOfInterval, parse, isSunday, subDays } from "date-fns";
+import { doc, getDoc, getDocs, collection, query, where, orderBy } from "firebase/firestore";
 import { useFirestore, useUser, useAuth } from "@/firebase";
 import { setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import type { DrugHighlight } from "@/lib/types";
@@ -42,7 +42,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import PinDialog from "./PinDialog";
 import DownloadDialog from "./DownloadDialog";
-import { Pencil, Save, X, Calendar as CalendarIcon, Loader2, Download, Trash2, Sparkles } from "lucide-react";
+import { Pencil, Save, X, Calendar as CalendarIcon, Loader2, Download, Trash2, Sparkles, CheckCircle, XCircle } from "lucide-react";
 import {
   Carousel,
   CarouselContent,
@@ -50,11 +50,17 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
 import { cn } from "@/lib/utils";
 import { Textarea } from "../ui/textarea";
 import { ThemeToggle } from "../ThemeToggle";
 import { getDrugInfo } from "@/ai/flows/drug-info-flow";
+import { generateMcqs, McqQuestion } from "@/ai/flows/mcq-flow";
+
 
 const drugSchema = z.object({
   drugName: z.string().min(1, "Drug name is required."),
@@ -95,6 +101,13 @@ export default function PharmaFlashClient() {
   const [isSaving, setIsSaving] = useState(false);
   const [isFetchingAI, setIsFetchingAI] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  
+  // Quiz state
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
+  const [quizQuestions, setQuizQuestions] = useState<McqQuestion[]>([]);
+  const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
+  const [quizResult, setQuizResult] = useState<{score: number; total: number} | null>(null);
+
 
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -107,6 +120,7 @@ export default function PharmaFlashClient() {
   });
 
   const dateString = useMemo(() => format(selectedDate, "yyyy-MM-dd"), [selectedDate]);
+  const isSundaySelected = useMemo(() => isSunday(selectedDate), [selectedDate]);
 
   useEffect(() => {
     if (firestore && user === null && !isUserLoading) {
@@ -134,6 +148,11 @@ export default function PharmaFlashClient() {
     if (!firestore) return;
     const fetchDrugData = async () => {
       setIsLoading(true);
+      // Reset quiz state when date changes
+      setQuizQuestions([]);
+      setUserAnswers({});
+      setQuizResult(null);
+
       try {
         const docRef = doc(firestore, "drugHighlights", dateString);
         const docSnap = await getDoc(docRef);
@@ -168,6 +187,66 @@ export default function PharmaFlashClient() {
       end: today,
     }).sort((a,b) => a.getTime() - b.getTime());
   }, []);
+
+  const handleGenerateQuiz = async () => {
+    if (!firestore) return;
+
+    setIsGeneratingQuiz(true);
+    setQuizQuestions([]);
+    setUserAnswers({});
+    setQuizResult(null);
+
+    try {
+      const lastWeekDate = format(subDays(selectedDate, 6), "yyyy-MM-dd");
+      const sundayDate = format(selectedDate, "yyyy-MM-dd");
+
+      const q = query(
+        collection(firestore, "drugHighlights"),
+        where("__name__", ">=", lastWeekDate),
+        where("__name__", "<=", sundayDate),
+        orderBy("__name__")
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const highlights = querySnapshot.docs.map((doc) => doc.data()) as DrugHighlight[];
+
+      if (highlights.length === 0) {
+        toast({
+          title: "Not Enough Data",
+          description: "There isn't enough drug data from the past week to generate a quiz.",
+        });
+        setIsGeneratingQuiz(false);
+        return;
+      }
+      
+      const result = await generateMcqs({ drugs: highlights });
+      setQuizQuestions(result.questions);
+    } catch (error) {
+      console.error("Error generating quiz:", error);
+      toast({
+        variant: "destructive",
+        title: "Quiz Generation Failed",
+        description: "Could not generate the quiz. Please try again.",
+      });
+    } finally {
+      setIsGeneratingQuiz(false);
+    }
+  };
+
+  const handleAnswerChange = (questionIndex: number, answer: string) => {
+    setUserAnswers(prev => ({...prev, [questionIndex]: answer}));
+  };
+
+  const handleCheckResult = () => {
+    let score = 0;
+    quizQuestions.forEach((q, index) => {
+      if (userAnswers[index] === q.correctAnswer) {
+        score++;
+      }
+    });
+    setQuizResult({ score, total: quizQuestions.length });
+  };
+
 
   const handleSave = async (data: DrugHighlight) => {
     if (!firestore) return;
@@ -277,7 +356,7 @@ export default function PharmaFlashClient() {
       <div className="p-6 relative">
         <h1 className="text-3xl font-headline font-bold text-center tracking-tight text-primary">Department of Pharmacology</h1>
         <p className="text-center text-xl font-headline text-primary mt-1 font-bold">भेषजगुण विज्ञान विभाग</p>
-        <p className="text-center text-primary text-2xl mt-2 font-headline">Your daily dose of Pharmacology.</p>
+        <p className="text-center text-primary text-3xl mt-2 font-headline">Your Daily Dose of Pharmacology.</p>
         <div className="absolute top-4 right-4">
           <ThemeToggle />
         </div>
@@ -342,119 +421,206 @@ export default function PharmaFlashClient() {
           </PopoverContent>
         </Popover>
       </div>
-
-
+      
       <div className="px-6 pb-6">
+      <Tabs defaultValue="highlight" className="w-full" value={isSundaySelected ? undefined: "highlight"}>
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <CalendarIcon className="h-5 w-5 text-muted-foreground" />
-            Highlight for {format(selectedDate, "MMMM d, yyyy")}
-          </h2>
-            <div className="flex gap-2">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+                {isSundaySelected ? `Weekly Review for ${format(selectedDate, "MMMM d, yyyy")}` : `Highlight for ${format(selectedDate, "MMMM d, yyyy")}`}
+            </h2>
+            <div className="flex items-center gap-2">
+                <TabsList className={cn(!isSundaySelected && "hidden")}>
+                    <TabsTrigger value="highlight">Drug of the Day</TabsTrigger>
+                    <TabsTrigger value="quiz">Ask Questions</TabsTrigger>
+                </TabsList>
                 <Button variant="outline" size="sm" onClick={() => setIsDownloadDialogOpen(true)}>
                     <Download className="mr-2 h-4 w-4" /> Download
                 </Button>
-                {!isEditing && (
+                {!isEditing && !isSundaySelected && (
                     <Button variant="outline" size="sm" onClick={() => setIsPinDialogOpen(true)}>
                         <Pencil className="mr-2 h-4 w-4" /> Edit
                     </Button>
                 )}
             </div>
         </div>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSave)}>
-            <div className="border rounded-lg overflow-hidden">
-                <Table>
-                <TableBody>
-                    {isLoading ? (
-                        formFields.map(field => (
-                            <TableRow key={field.key}>
-                                <TableCell className="font-semibold w-1/3 font-body">{field.label}</TableCell>
-                                <TableCell><Skeleton className="h-8 w-full" /></TableCell>
-                            </TableRow>
-                        ))
-                    ) : (
-                        formFields.map(field => (
-                            <TableRow key={field.key}>
-                                <TableCell className="font-semibold w-1/3 align-top pt-5 font-body">{field.label}</TableCell>
-                                <TableCell>
-                                {isEditing ? (
-                                    <FormField
-                                        control={form.control}
-                                        name={field.key}
-                                        render={({ field: formFieldRender }) => (
-                                            <FormItem>
-                                            <FormControl>
-                                                {field.isTextarea ? (
-                                                    <Textarea placeholder={`Enter ${field.label.toLowerCase()}...`} {...formFieldRender} className="font-body min-h-[100px]" />
-                                                ) : (
-                                                    <Input placeholder={`Enter ${field.label.toLowerCase()}...`} {...formFieldRender} className="font-body" />
-                                                )}
-                                            </FormControl>
-                                            <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                ) : (
-                                    <div
-                                        className="text-primary text-base min-h-[2.5rem] py-2 whitespace-pre-wrap font-body"
-                                    >
-                                        {(drugData && drugData[field.key]) || "No data available."}
-                                    </div>
-                                )}
-                                </TableCell>
-                            </TableRow>
-                        ))
+
+        <TabsContent value="highlight">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSave)}>
+              <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                  <TableBody>
+                      {isLoading ? (
+                          formFields.map(field => (
+                              <TableRow key={field.key}>
+                                  <TableCell className="font-semibold w-1/3 font-body">{field.label}</TableCell>
+                                  <TableCell><Skeleton className="h-8 w-full" /></TableCell>
+                              </TableRow>
+                          ))
+                      ) : (
+                          formFields.map(field => (
+                              <TableRow key={field.key}>
+                                  <TableCell className="font-semibold w-1/3 align-top pt-5 font-body">{field.label}</TableCell>
+                                  <TableCell>
+                                  {isEditing ? (
+                                      <FormField
+                                          control={form.control}
+                                          name={field.key}
+                                          render={({ field: formFieldRender }) => (
+                                              <FormItem>
+                                              <FormControl>
+                                                  {field.isTextarea ? (
+                                                      <Textarea placeholder={`Enter ${field.label.toLowerCase()}...`} {...formFieldRender} className="font-body min-h-[100px]" />
+                                                  ) : (
+                                                      <Input placeholder={`Enter ${field.label.toLowerCase()}...`} {...formFieldRender} className="font-body" />
+                                                  )}
+                                              </FormControl>
+                                              <FormMessage />
+                                              </FormItem>
+                                          )}
+                                      />
+                                  ) : (
+                                      <div
+                                          className="text-primary text-base min-h-[2.5rem] py-2 whitespace-pre-wrap font-body"
+                                      >
+                                          {(drugData && drugData[field.key]) || "No data available."}
+                                      </div>
+                                  )}
+                                  </TableCell>
+                              </TableRow>
+                          ))
+                      )}
+                  </TableBody>
+                  </Table>
+              </div>
+              {isEditing && (
+                  <div className="flex justify-end gap-2 mt-4">
+                      <Button type="button" variant="outline" onClick={handleAutofill} disabled={isFetchingAI}>
+                          {isFetchingAI ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                              <Sparkles className="mr-2 h-4 w-4" />
+                          )}
+                          Auto-fill with AI
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button type="button" variant="destructive">
+                             <Trash2 className="mr-2 h-4 w-4" /> Delete All Data
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete the
+                              drug highlight data for {format(selectedDate, "MMMM d, yyyy")}.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDelete}>Confirm Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                      <Button type="button" variant="ghost" onClick={handleCancelEdit}>
+                          <X className="mr-2 h-4 w-4" /> Cancel
+                      </Button>
+                      <Button type="submit" disabled={isSaving}>
+                          {isSaving ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                              <Save className="mr-2 h-4 w-4" />
+                          )}
+                          Save Changes
+                      </Button>
+                  </div>
+              )}
+            </form>
+          </Form>
+        </TabsContent>
+
+        <TabsContent value="quiz">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Sunday Quiz</CardTitle>
+                    <CardDescription>Test your knowledge of the drugs highlighted in the past week.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    {isGeneratingQuiz && (
+                        <div className="flex items-center justify-center py-12">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            <p className="ml-4 text-muted-foreground">Generating your quiz...</p>
+                        </div>
                     )}
-                </TableBody>
-                </Table>
-            </div>
-            {isEditing && (
-                <div className="flex justify-end gap-2 mt-4">
-                    <Button type="button" variant="outline" onClick={handleAutofill} disabled={isFetchingAI}>
-                        {isFetchingAI ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                            <Sparkles className="mr-2 h-4 w-4" />
-                        )}
-                        Auto-fill with AI
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button type="button" variant="destructive">
-                           <Trash2 className="mr-2 h-4 w-4" /> Delete All Data
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the
-                            drug highlight data for {format(selectedDate, "MMMM d, yyyy")}.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleDelete}>Confirm Delete</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                    <Button type="button" variant="ghost" onClick={handleCancelEdit}>
-                        <X className="mr-2 h-4 w-4" /> Cancel
-                    </Button>
-                    <Button type="submit" disabled={isSaving}>
-                        {isSaving ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                            <Save className="mr-2 h-4 w-4" />
-                        )}
-                        Save Changes
-                    </Button>
-                </div>
-            )}
-          </form>
-        </Form>
+
+                    {!isGeneratingQuiz && quizQuestions.length === 0 && !quizResult && (
+                        <div className="text-center py-12">
+                            <p className="mb-4 text-muted-foreground">Ready to test your pharmacology knowledge?</p>
+                            <Button onClick={handleGenerateQuiz}>
+                                <Sparkles className="mr-2 h-4 w-4" />
+                                Generate 10-Question Quiz
+                            </Button>
+                        </div>
+                    )}
+                    
+                    {quizResult && (
+                        <div className="text-center py-12 space-y-4">
+                             <h3 className="text-2xl font-bold">Quiz Complete!</h3>
+                            <p className="text-4xl font-bold text-primary">{quizResult.score} / {quizResult.total}</p>
+                            <p className="text-muted-foreground">
+                                {quizResult.score > 7 ? "Excellent work! You have a strong grasp of the material." : "Good effort! Keep reviewing to improve your score."}
+                            </p>
+                            <div className="space-y-4 pt-4">
+                                {quizQuestions.map((q, index) => (
+                                    <div key={index} className={cn("p-4 rounded-md text-left", userAnswers[index] === q.correctAnswer ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30')}>
+                                        <p className="font-semibold">{index + 1}. {q.question}</p>
+                                        <p className={cn("mt-2 text-sm", userAnswers[index] === q.correctAnswer ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300')}>
+                                            Your answer: {userAnswers[index] || "Not answered"}
+                                            {userAnswers[index] !== q.correctAnswer && <span className="block">Correct answer: {q.correctAnswer}</span>}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                            <Button onClick={handleGenerateQuiz} className="mt-6">
+                                <Sparkles className="mr-2 h-4 w-4" />
+                                Try Another Quiz
+                            </Button>
+                        </div>
+                    )}
+
+                    {!quizResult && quizQuestions.length > 0 && (
+                        <div className="space-y-8">
+                            {quizQuestions.map((q, index) => (
+                                <div key={index} className="space-y-3">
+                                    <p className="font-semibold text-base">{index + 1}. {q.question}</p>
+                                    <RadioGroup
+                                        onValueChange={(value) => handleAnswerChange(index, value)}
+                                        value={userAnswers[index]}
+                                        className="space-y-2"
+                                    >
+                                        {q.options.map((option, i) => (
+                                            <div key={i} className="flex items-center space-x-2">
+                                                <RadioGroupItem value={option} id={`q${index}-opt${i}`} />
+                                                <Label htmlFor={`q${index}-opt${i}`}>{option}</Label>
+                                            </div>
+                                        ))}
+                                    </RadioGroup>
+                                </div>
+                            ))}
+                            <Button onClick={handleCheckResult} disabled={Object.keys(userAnswers).length !== quizQuestions.length}>
+                                Check Result
+                            </Button>
+                        </div>
+                    )}
+
+                </CardContent>
+            </Card>
+        </TabsContent>
+      </Tabs>
       </div>
+
       <PinDialog 
         open={isPinDialogOpen}
         onOpenChange={setIsPinDialogOpen}
