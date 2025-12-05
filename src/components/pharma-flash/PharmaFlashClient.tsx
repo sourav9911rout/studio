@@ -82,6 +82,13 @@ import { cn } from '@/lib/utils';
 import { Textarea } from '../ui/textarea';
 import { ThemeToggle } from '../ThemeToggle';
 import { getDrugInfo } from '@/ai/flows/drug-info-flow';
+import { DayPicker, DayProps } from 'react-day-picker';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const drugSchema = z.object({
   drugName: z.string().min(1, 'Drug name is required.'),
@@ -359,6 +366,29 @@ export default function PharmaFlashClient() {
     () => Array.from(datesWithData).map(parseDateString),
     [datesWithData]
   );
+  
+  function DayWithTooltip(props: DayProps) {
+    const formattedDate = format(props.date, 'yyyy-MM-dd');
+    const dayDrugData = allDrugData.get(formattedDate);
+  
+    if (dayDrugData) {
+      return (
+        <TooltipProvider delayDuration={100}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DayPicker.Day {...props} />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{dayDrugData.drugName}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+  
+    return <DayPicker.Day {...props} />;
+  }
+
 
   return (
     <>
@@ -454,6 +484,9 @@ export default function PharmaFlashClient() {
                   backgroundColor: 'hsl(var(--primary) / 0.2)',
                   border: '1px solid hsl(var(--primary) / 0.5)',
                 },
+              }}
+              components={{
+                Day: DayWithTooltip
               }}
             />
           </PopoverContent>
