@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { format, isToday, eachDayOfInterval } from "date-fns";
+import { format, isToday, eachDayOfInterval, parse } from "date-fns";
 import { doc, getDoc, collection, getDocs, query } from "firebase/firestore";
 import { useFirestore, useUser, useAuth } from "@/firebase";
 import { setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
@@ -36,7 +36,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar, CalendarProps } from "@/components/ui/calendar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import PinDialog from "./PinDialog";
@@ -49,6 +49,12 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
 import { cn } from "@/lib/utils";
 import { Textarea } from "../ui/textarea";
@@ -86,7 +92,7 @@ const emptyDrugData: DrugHighlight = {
 export default function PharmaFlashClient() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [drugData, setDrugData] = useState<DrugHighlight | null>(null);
-  const [datesWithData, setDatesWithData] = useState<Set<string>>(new Set());
+  const [drugDataMap, setDrugDataMap] = useState<Map<string, string>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
@@ -116,14 +122,20 @@ export default function PharmaFlashClient() {
   useEffect(() => {
     if (!firestore) return;
 
-    const fetchDatesWithData = async () => {
+    const fetchAllDrugData = async () => {
         const q = query(collection(firestore, "drugHighlights"));
         const querySnapshot = await getDocs(q);
-        const dates = new Set(querySnapshot.docs.map(doc => doc.id));
-        setDatesWithData(dates);
+        const dataMap = new Map<string, string>();
+        querySnapshot.forEach(doc => {
+          const data = doc.data() as DrugHighlight;
+          if (data.drugName) {
+            dataMap.set(doc.id, data.drugName);
+          }
+        });
+        setDrugDataMap(dataMap);
     };
 
-    fetchDatesWithData();
+    fetchAllDrugData();
   }, [firestore]);
 
   useEffect(() => {
@@ -173,7 +185,7 @@ export default function PharmaFlashClient() {
     
     // Optimistically update UI
     setDrugData(data);
-    setDatesWithData(prev => new Set(prev).add(dateString));
+    setDrugDataMap(prev => new Map(prev).set(dateString, data.drugName));
     setIsEditing(false);
     setIsSaving(false);
 
@@ -192,10 +204,10 @@ export default function PharmaFlashClient() {
     // Optimistically update UI
     setDrugData(null);
     form.reset(emptyDrugData);
-    setDatesWithData(prev => {
-      const newDates = new Set(prev);
-      newDates.delete(dateString);
-      return newDates;
+    setDrugDataMap(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(dateString);
+        return newMap;
     });
     setIsEditing(false);
 
@@ -262,11 +274,42 @@ export default function PharmaFlashClient() {
   }, [datesForNavigation]);
 
   const parseDateString = (dateStr: string): Date => {
-    const [year, month, day] = dateStr.split('-').map(Number);
-    return new Date(Date.UTC(year, month - 1, day));
+    return parse(dateStr, 'yyyy-MM-dd', new Date());
   };
+  
+  const datesWithData = useMemo(() => new Set(drugDataMap.keys()), [drugDataMap]);
   const hasDataModifier = Array.from(datesWithData).map(dateStr => parseDateString(dateStr));
   
+  const DayWithTooltip: CalendarProps['components'] = {
+    Day: ({ date, ...props }) => {
+      const formattedDate = format(date, 'yyyy-MM-dd');
+      const drugName = drugDataMap.get(formattedDate);
+
+      const dayContent = (
+        <div {...props.rootProps} >
+            {format(date, 'd')}
+        </div>
+      );
+      
+      if (drugName) {
+        return (
+          <TooltipProvider delayDuration={100}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                {dayContent}
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-sm font-semibold">{drugName}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
+      }
+      
+      return dayContent;
+    },
+  };
+
   return (
     <>
       <div className="p-6 relative">
@@ -333,6 +376,7 @@ export default function PharmaFlashClient() {
               initialFocus
               modifiers={{ hasData: hasDataModifier }}
               modifiersStyles={{ hasData: { backgroundColor: "hsl(var(--primary) / 0.2)",  border: "1px solid hsl(var(--primary) / 0.5)"} }}
+              components={DayWithTooltip}
             />
           </PopoverContent>
         </Popover>
