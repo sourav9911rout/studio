@@ -60,6 +60,7 @@ import { cn } from "@/lib/utils";
 import { Textarea } from "../ui/textarea";
 import { ThemeToggle } from "../ThemeToggle";
 import { getDrugInfo } from "@/ai/flows/drug-info-flow";
+import { DayProps } from "react-day-picker";
 
 const drugSchema = z.object({
   drugName: z.string().min(1, "Drug name is required."),
@@ -281,8 +282,8 @@ export default function PharmaFlashClient() {
   const hasDataModifier = Array.from(datesWithData).map(dateStr => parseDateString(dateStr));
   
   const DayWithTooltip: CalendarProps['components'] = {
-    Day: (props) => {
-      const { date, modifiers } = props;
+    Day: (props: DayProps) => {
+      const { date, modifiers = {} } = props;
       const formattedDate = format(date, 'yyyy-MM-dd');
       const drugName = drugDataMap.get(formattedDate);
 
