@@ -82,7 +82,7 @@ import { cn } from '@/lib/utils';
 import { Textarea } from '../ui/textarea';
 import { ThemeToggle } from '../ThemeToggle';
 import { getDrugInfo } from '@/ai/flows/drug-info-flow';
-import { DayPicker, DayProps } from 'react-day-picker';
+import { Day, DayProps } from 'react-day-picker';
 import {
   Tooltip,
   TooltipContent,
@@ -376,7 +376,7 @@ export default function PharmaFlashClient() {
         <TooltipProvider delayDuration={100}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <DayPicker.Day {...props} />
+              <Day {...props} />
             </TooltipTrigger>
             <TooltipContent>
               <p>{dayDrugData.drugName}</p>
@@ -386,7 +386,7 @@ export default function PharmaFlashClient() {
       );
     }
   
-    return <DayPicker.Day {...props} />;
+    return <Day {...props} />;
   }
 
 
@@ -400,7 +400,7 @@ export default function PharmaFlashClient() {
           भेषजगुण विज्ञान विभाग
         </p>
         <p className="text-center text-xl mt-2 font-headline text-primary">
-          Your Daily dose of Pharmacology.
+          Your daily dose of Pharmacology.
         </p>
         <div className="absolute top-4 right-4">
           <ThemeToggle />
@@ -665,7 +665,3 @@ export default function PharmaFlashClient() {
     </>
   );
 }
-
-    
-
-    
