@@ -284,21 +284,24 @@ export default function PharmaFlashClient() {
   
   const DayWithTooltip: CalendarProps['components'] = {
     Day: (props: DayProps) => {
-      const { date, modifiers = {} } = props;
+      const { date, modifiers } = props;
       const formattedDate = format(date, 'yyyy-MM-dd');
       const drugName = drugDataMap.get(formattedDate);
 
       const dayContent = (
         <div
           className={cn(
-            buttonVariants({ variant: 'ghost' }),
-            'h-9 w-9 p-0 font-normal',
-            modifiers.today && !modifiers.selected && 'bg-accent text-accent-foreground',
-            modifiers.selected && 'bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary focus:text-primary-foreground',
+            'h-9 w-9 p-0 font-normal rounded-md flex items-center justify-center relative',
+            !modifiers.disabled && 'hover:bg-accent',
             modifiers.outside && 'text-muted-foreground opacity-50',
-            modifiers.disabled && 'text-muted-foreground opacity-50'
+            modifiers.disabled && 'text-muted-foreground opacity-50',
+            modifiers.selected && 'text-primary-foreground bg-primary hover:bg-primary/90 focus:bg-primary',
+            modifiers.today && !modifiers.selected && 'bg-accent text-accent-foreground',
           )}
         >
+           {modifiers.hasData && !modifiers.selected && (
+            <div className="absolute inset-0 bg-primary/20 border border-primary/50 rounded-md -z-10"></div>
+          )}
           {format(date, 'd')}
         </div>
       );
@@ -385,44 +388,7 @@ export default function PharmaFlashClient() {
               disabled={{ before: new Date("2025-10-25"), after: new Date() }}
               initialFocus
               modifiers={{ hasData: hasDataModifier }}
-              modifiersStyles={{ hasData: { backgroundColor: "hsl(var(--primary) / 0.2)",  border: "1px solid hsl(var(--primary) / 0.5)"} }}
-              components={{
-                Day: (props) => {
-                  const { date, modifiers = {} } = props;
-                  const formattedDate = format(date, "yyyy-MM-dd");
-                  const drugName = drugDataMap.get(formattedDate);
-            
-                  const dayContent = (
-                    <div
-                      className={cn(
-                        "h-9 w-9 p-0 font-normal rounded-md flex items-center justify-center",
-                        buttonVariants({ variant: "ghost" }),
-                        modifiers.disabled && "opacity-50",
-                        !modifiers.disabled && "hover:bg-accent",
-                        modifiers.today && !modifiers.selected && "bg-accent text-accent-foreground",
-                        modifiers.selected && "text-primary-foreground bg-primary hover:bg-primary/90"
-                      )}
-                    >
-                      {format(date, "d")}
-                    </div>
-                  );
-            
-                  if (drugName && !modifiers.disabled) {
-                    return (
-                      <TooltipProvider delayDuration={100}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>{dayContent}</TooltipTrigger>
-                          <TooltipContent>
-                            <p className="text-sm font-semibold">{drugName}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    );
-                  }
-            
-                  return dayContent;
-                }
-              }}
+              components={DayWithTooltip}
             />
           </PopoverContent>
         </Popover>
@@ -553,6 +519,3 @@ export default function PharmaFlashClient() {
     </>
   );
 }
-
-    
-
