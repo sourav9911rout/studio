@@ -283,15 +283,15 @@ export default function PharmaFlashClient() {
     return parse(dateStr, 'yyyy-MM-dd', new Date());
   };
   
-  const hasDataModifier = useMemo(() => Array.from(datesWithData), [datesWithData]);
+  const hasDataModifier = useMemo(() => Array.from(datesWithData).map(parseDateString), [datesWithData]);
   
-  const DayWithDrugName = ({ date, modifiers, ...props }: DayProps) => {
+  const DayWithDrugName = ({ date, ...props }: DayProps) => {
+    const { modifiers } = props;
     const formattedDate = format(date, 'yyyy-MM-dd');
     const drugName = drugDataMap.get(formattedDate);
   
     return (
       <div
-        {...props}
         className={cn(
           'h-24 w-24 p-2 text-center rounded-md flex flex-col items-center justify-center relative transition-colors',
           !modifiers.disabled && 'hover:bg-accent',
@@ -301,7 +301,9 @@ export default function PharmaFlashClient() {
           modifiers.disabled && 'text-muted-foreground opacity-50'
         )}
       >
-        <div className={cn("absolute inset-0 rounded-md -z-10", modifiers.hasData && !modifiers.selected && 'bg-primary/20 border border-primary/50')} />
+        {modifiers.hasData && !modifiers.selected && (
+           <div className="absolute inset-0 bg-primary/20 border border-primary/50 rounded-md -z-10"></div>
+        )}
         <div className="text-lg font-bold">{format(date, 'd')}</div>
         {drugName && !modifiers.disabled && (
           <div className="text-xs mt-1 truncate w-full" title={drugName}>
@@ -377,7 +379,7 @@ export default function PharmaFlashClient() {
                 onSelect={handleDateSelect}
                 disabled={{ before: new Date('2025-10-25'), after: new Date() }}
                 initialFocus
-                modifiers={{ hasData: date => drugDataMap.has(format(date, 'yyyy-MM-dd')) }}
+                modifiers={{ hasData: hasDataModifier }}
                 components={{ Day: DayWithDrugName }}
                 classNames={{
                   day_cell: 'w-24 h-24', // Ensure cells are square
