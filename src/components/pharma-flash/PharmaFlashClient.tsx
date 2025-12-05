@@ -41,7 +41,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import PinDialog from "./PinDialog";
 import DownloadDialog from "./DownloadDialog";
-import { Pencil, Save, X, Calendar as CalendarIcon, Loader2, Download, Trash2 } from "lucide-react";
+import { Pencil, Save, X, Calendar as CalendarIcon, Loader2, Download, Trash2, Sparkles } from "lucide-react";
 import {
   Carousel,
   CarouselContent,
@@ -53,6 +53,7 @@ import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
 import { cn } from "@/lib/utils";
 import { Textarea } from "../ui/textarea";
 import { ThemeToggle } from "../ThemeToggle";
+import { getDrugInfo } from "@/ai/flows/drug-info-flow";
 
 const drugSchema = z.object({
   drugName: z.string().min(1, "Drug name is required."),
@@ -91,6 +92,7 @@ export default function PharmaFlashClient() {
   const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
   const [isDownloadDialogOpen, setIsDownloadDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isFetchingAI, setIsFetchingAI] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const { toast } = useToast();
@@ -216,6 +218,41 @@ export default function PharmaFlashClient() {
     if (date) {
       setSelectedDate(date);
       setIsCalendarOpen(false);
+    }
+  };
+
+  const handleAutofill = async () => {
+    const drugName = form.getValues("drugName");
+    if (!drugName) {
+      toast({
+        variant: "destructive",
+        title: "Drug Name Required",
+        description: "Please enter a drug name before using auto-fill.",
+      });
+      return;
+    }
+
+    setIsFetchingAI(true);
+    try {
+      const result = await getDrugInfo({ drugName });
+      form.setValue("drugClass", result.drugClass);
+      form.setValue("mechanism", result.mechanism);
+      form.setValue("uses", result.uses);
+      form.setValue("sideEffects", result.sideEffects);
+      form.setValue("funFact", result.funFact);
+      toast({
+        title: "AI Auto-fill Complete",
+        description: `Information for ${drugName} has been populated.`,
+      });
+    } catch (error) {
+      console.error("Error fetching data from AI:", error);
+      toast({
+        variant: "destructive",
+        title: "AI Auto-fill Failed",
+        description: "Could not fetch drug information. Please try again.",
+      });
+    } finally {
+      setIsFetchingAI(false);
     }
   };
 
@@ -369,6 +406,14 @@ export default function PharmaFlashClient() {
             </div>
             {isEditing && (
                 <div className="flex justify-end gap-2 mt-4">
+                    <Button type="button" variant="outline" onClick={handleAutofill} disabled={isFetchingAI}>
+                        {isFetchingAI ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <Sparkles className="mr-2 h-4 w-4" />
+                        )}
+                        Auto-fill with AI
+                    </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button type="button" variant="destructive">
