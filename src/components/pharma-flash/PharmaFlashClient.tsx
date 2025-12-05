@@ -90,7 +90,7 @@ const drugSchema = z.object({
   clinicalUses: z.string().min(1, 'Clinical uses are required.'),
   contraindication: z.string().min(1, 'Contraindication is required.'),
   offLabelUse: z.string().min(1, 'Off-label use is required.'),
-  additionalInformation: z.string().min(1, 'Additional Information is required.'),
+  funFact: z.string().min(1, 'Fun fact is required.'),
 });
 
 const formFields: {
@@ -110,7 +110,7 @@ const formFields: {
   { key: 'clinicalUses', label: 'Clinical uses', isTextarea: true },
   { key: 'contraindication', label: 'Contraindication', isTextarea: true },
   { key: 'offLabelUse', label: 'Off Label Use', isTextarea: true },
-  { key: 'additionalInformation', label: 'Additional Information', isTextarea: true },
+  { key: 'funFact', label: 'Fun Fact', isTextarea: true },
 ];
 
 const emptyDrugData: DrugHighlight = {
@@ -126,7 +126,7 @@ const emptyDrugData: DrugHighlight = {
   clinicalUses: '',
   contraindication: '',
   offLabelUse: '',
-  additionalInformation: '',
+  funFact: '',
 };
 
 export default function PharmaFlashClient() {
@@ -299,7 +299,7 @@ export default function PharmaFlashClient() {
       form.setValue('clinicalUses', result.clinicalUses);
       form.setValue('contraindication', result.contraindication);
       form.setValue('offLabelUse', result.offLabelUse);
-      form.setValue('additionalInformation', result.additionalInformation);
+      form.setValue('funFact', result.funFact);
       toast({
         title: 'AI Auto-fill Complete',
         description: `Information for ${drugName} has been populated.`,
@@ -341,8 +341,8 @@ export default function PharmaFlashClient() {
         <p className="text-center text-xl font-headline text-primary mt-1 font-bold">
           भेषजगुण विज्ञान विभाग
         </p>
-        <p className="text-center text-5xl mt-2 font-headline text-primary">
-          Your daily dose of Pharmacology.
+        <p className="text-center text-6xl mt-2 font-headline text-primary">
+          Your Daily Dose of Pharmacology.
         </p>
         <div className="absolute top-4 right-4">
           <ThemeToggle />

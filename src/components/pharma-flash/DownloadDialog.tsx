@@ -108,7 +108,14 @@ export default function DownloadDialog({
           ['Mechanism of Action', highlight.mechanism],
           ['Common Uses', highlight.uses],
           ['Side Effects', highlight.sideEffects],
-          ['Additional Information', highlight.additionalInformation],
+          ['Route of Administration', highlight.routeOfAdministration],
+          ['Dose', highlight.dose],
+          ['Dosage Form', highlight.dosageForm],
+          ['Half-life', highlight.halfLife],
+          ['Clinical uses', highlight.clinicalUses],
+          ['Contraindication', highlight.contraindication],
+          ['Off Label Use', highlight.offLabelUse],
+          ['Fun Fact', highlight.funFact],
         ];
       });
 

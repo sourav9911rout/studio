@@ -33,7 +33,7 @@ const GetDrugInfoOutputSchema = z.object({
   clinicalUses: z.string().describe("The clinical uses of the drug."),
   contraindication: z.string().describe("Contraindications for the drug."),
   offLabelUse: z.string().describe("Common off-label uses for the drug."),
-  additionalInformation: z.string().describe('Additional interesting information or a fun fact about the drug.'),
+  funFact: z.string().describe('An interesting fun fact about the drug.'),
 });
 export type GetDrugInfoOutput = z.infer<typeof GetDrugInfoOutputSchema>;
 
@@ -62,7 +62,7 @@ Ensure the output is in the requested JSON format.
 - Clinical uses
 - Contraindication
 - Off Label Use
-- Additional Information (can be a fun fact or other interesting detail)`,
+- Fun Fact (must be a fun fact or other interesting detail, not a general summary)`,
 });
 
 const getDrugInfoFlow = ai.defineFlow(

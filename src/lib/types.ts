@@ -11,5 +11,5 @@ export type DrugHighlight = {
   clinicalUses: string;
   contraindication: string;
   offLabelUse: string;
-  additionalInformation: string;
+  funFact: string;
 };
