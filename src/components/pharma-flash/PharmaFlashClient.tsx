@@ -285,8 +285,7 @@ export default function PharmaFlashClient() {
   
   const hasDataModifier = useMemo(() => Array.from(datesWithData).map(parseDateString), [datesWithData]);
   
-  const DayWithDrugName = ({ date, ...props }: DayProps) => {
-    const { modifiers } = props;
+  const DayWithDrugName: React.FC<DayProps> = ({ date, modifiers }) => {
     const formattedDate = format(date, 'yyyy-MM-dd');
     const drugName = drugDataMap.get(formattedDate);
   
