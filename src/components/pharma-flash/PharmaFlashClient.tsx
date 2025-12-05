@@ -10,7 +10,7 @@ import { doc, getDoc, collection, getDocs, query } from "firebase/firestore";
 import { useFirestore, useUser, useAuth } from "@/firebase";
 import { setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import type { DrugHighlight } from "@/lib/types";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -285,7 +285,7 @@ export default function PharmaFlashClient() {
   
   const hasDataModifier = useMemo(() => Array.from(datesWithData).map(parseDateString), [datesWithData]);
   
-  const DayWithDrugName: React.FC<DayProps> = ({ date, modifiers }) => {
+  const DayWithDrugName: React.FC<DayProps> = ({ date, modifiers, ...props }) => {
     const formattedDate = format(date, 'yyyy-MM-dd');
     const drugName = drugDataMap.get(formattedDate);
   
