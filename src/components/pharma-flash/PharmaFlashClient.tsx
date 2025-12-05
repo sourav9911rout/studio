@@ -84,6 +84,13 @@ const drugSchema = z.object({
   uses: z.string().min(1, 'Uses are required.'),
   sideEffects: z.string().min(1, 'Side effects are required.'),
   funFact: z.string().min(1, 'Fun fact is required.'),
+  routeOfAdministration: z.string().min(1, 'Route of Administration is required.'),
+  dose: z.string().min(1, 'Dose is required.'),
+  dosageForm: z.string().min(1, 'Dosage Form is required.'),
+  halfLife: z.string().min(1, 'Half-life is required.'),
+  clinicalUses: z.string().min(1, 'Clinical uses are required.'),
+  contraindication: z.string().min(1, 'Contraindication is required.'),
+  offLabelUse: z.string().min(1, 'Off-label use is required.'),
 });
 
 const formFields: {
@@ -97,6 +104,13 @@ const formFields: {
   { key: 'uses', label: 'Common Uses', isTextarea: true },
   { key: 'sideEffects', label: 'Side Effects', isTextarea: true },
   { key: 'funFact', label: 'Fun Fact', isTextarea: true },
+  { key: 'routeOfAdministration', label: 'Route of Administration', isTextarea: false },
+  { key: 'dose', label: 'Dose', isTextarea: false },
+  { key: 'dosageForm', label: 'Dosage Form', isTextarea: false },
+  { key: 'halfLife', label: 'Half-life', isTextarea: false },
+  { key: 'clinicalUses', label: 'Clinical uses', isTextarea: true },
+  { key: 'contraindication', label: 'Contraindication', isTextarea: true },
+  { key: 'offLabelUse', label: 'Off Label Use', isTextarea: true },
 ];
 
 const emptyDrugData: DrugHighlight = {
@@ -106,6 +120,13 @@ const emptyDrugData: DrugHighlight = {
   uses: '',
   sideEffects: '',
   funFact: '',
+  routeOfAdministration: '',
+  dose: '',
+  dosageForm: '',
+  halfLife: '',
+  clinicalUses: '',
+  contraindication: '',
+  offLabelUse: '',
 };
 
 export default function PharmaFlashClient() {
@@ -272,6 +293,13 @@ export default function PharmaFlashClient() {
       form.setValue('uses', result.uses);
       form.setValue('sideEffects', result.sideEffects);
       form.setValue('funFact', result.funFact);
+      form.setValue('routeOfAdministration', result.routeOfAdministration);
+      form.setValue('dose', result.dose);
+      form.setValue('dosageForm', result.dosageForm);
+      form.setValue('halfLife', result.halfLife);
+      form.setValue('clinicalUses', result.clinicalUses);
+      form.setValue('contraindication', result.contraindication);
+      form.setValue('offLabelUse', result.offLabelUse);
       toast({
         title: 'AI Auto-fill Complete',
         description: `Information for ${drugName} has been populated.`,
@@ -313,7 +341,7 @@ export default function PharmaFlashClient() {
         <p className="text-center text-xl font-headline text-primary mt-1 font-bold">
           भेषजगुण विज्ञान विभाग
         </p>
-        <p className="text-center text-4xl mt-2 font-headline text-primary">
+        <p className="text-center text-5xl mt-2 font-headline text-primary">
           Your Daily Dose of Pharmacology.
         </p>
         <div className="absolute top-4 right-4">

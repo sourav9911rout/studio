@@ -27,6 +27,13 @@ const GetDrugInfoOutputSchema = z.object({
   uses: z.string().describe('Common clinical uses of the drug.'),
   sideEffects: z.string().describe('Common side effects of the drug.'),
   funFact: z.string().describe('An interesting or fun fact about the drug.'),
+  routeOfAdministration: z.string().describe("The route of administration for the drug."),
+  dose: z.string().describe("The typical dose of the drug."),
+  dosageForm: z.string().describe("The available dosage forms of the drug."),
+  halfLife: z.string().describe("The half-life of the drug."),
+  clinicalUses: z.string().describe("The clinical uses of the drug."),
+  contraindication: z.string().describe("Contraindications for the drug."),
+  offLabelUse: z.string().describe("Common off-label uses for the drug."),
 });
 export type GetDrugInfoOutput = z.infer<typeof GetDrugInfoOutputSchema>;
 
@@ -47,8 +54,15 @@ Ensure the output is in the requested JSON format.
 - Drug Class
 - Mechanism of Action
 - Common Uses
-- Common Side Effects
-- A Fun Fact`,
+- Side Effects
+- A Fun Fact
+- Route of Administration
+- Dose
+- Dosage Form
+- Half-life
+- Clinical uses
+- Contraindication
+- Off Label Use`,
 });
 
 const getDrugInfoFlow = ai.defineFlow(

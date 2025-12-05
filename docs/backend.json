@@ -33,6 +33,34 @@
         "funFact": {
           "type": "string",
           "description": "A fun or interesting fact about the drug."
+        },
+        "routeOfAdministration": {
+          "type": "string",
+          "description": "The route of administration for the drug."
+        },
+        "dose": {
+          "type": "string",
+          "description": "The typical dose of the drug."
+        },
+        "dosageForm": {
+          "type": "string",
+          "description": "The available dosage forms of the drug."
+        },
+        "halfLife": {
+          "type": "string",
+          "description": "The half-life of the drug."
+        },
+        "clinicalUses": {
+          "type": "string",
+          "description": "The clinical uses of the drug."
+        },
+        "contraindication": {
+          "type": "string",
+          "description": "Contraindications for the drug."
+        },
+        "offLabelUse": {
+          "type": "string",
+          "description": "Common off-label uses for the drug."
         }
       },
       "required": [
@@ -42,7 +70,14 @@
         "mechanism",
         "uses",
         "sideEffects",
-        "funFact"
+        "funFact",
+        "routeOfAdministration",
+        "dose",
+        "dosageForm",
+        "halfLife",
+        "clinicalUses",
+        "contraindication",
+        "offLabelUse"
       ]
     }
   },
