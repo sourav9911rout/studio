@@ -326,7 +326,7 @@ export default function PharmaFlashClient() {
             const field = key as keyof DrugHighlight;
             
             // Check if the field in the current form is empty or just whitespace
-            const isFieldBlank = !currentValues[field] || /^\s*$/.test(currentValues[field]);
+            const isFieldBlank = !currentValues[field] || /^\s*$/.test(String(currentValues[field]));
             
             if (isFieldBlank) {
                 form.setValue(field, newFormData[field]);
@@ -481,8 +481,7 @@ export default function PharmaFlashClient() {
               modifiers={{ hasData: hasDataModifier }}
               modifiersStyles={{
                 hasData: {
-                  backgroundColor: 'hsl(var(--primary) / 0.2)',
-                  border: '1px solid hsl(var(--primary) / 0.5)',
+                  fontWeight: 'bold'
                 },
               }}
               components={{
@@ -666,5 +665,7 @@ export default function PharmaFlashClient() {
     </>
   );
 }
+
+    
 
     
