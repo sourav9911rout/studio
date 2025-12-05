@@ -1,4 +1,4 @@
-export type DrugHighlight = {
+type DrugHighlight = {
   drugName: string;
   drugClass: string;
   mechanism: string;
