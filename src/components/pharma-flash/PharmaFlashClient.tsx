@@ -277,7 +277,7 @@ export default function PharmaFlashClient() {
       <div className="p-6 relative">
         <h1 className="text-3xl font-headline font-bold text-center tracking-tight text-primary">Department of Pharmacology</h1>
         <p className="text-center text-xl font-headline text-primary mt-1 font-bold">भेषजगुण विज्ञान विभाग</p>
-        <p className="text-center text-primary text-lg mt-2 font-headline">Your daily dose of pharmacology.</p>
+        <p className="text-center text-primary text-xl mt-2 font-headline">Your Daily dose of pharmacology.</p>
         <div className="absolute top-4 right-4">
           <ThemeToggle />
         </div>
