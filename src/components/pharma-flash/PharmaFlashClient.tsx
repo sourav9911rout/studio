@@ -138,6 +138,7 @@ const emptyDrugData: DrugHighlight = {
 export default function PharmaFlashClient() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [drugData, setDrugData] = useState<DrugHighlight | null>(null);
+  const [allDrugData, setAllDrugData] = useState<Map<string, DrugHighlight>>(new Map());
   const [datesWithData, setDatesWithData] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -171,17 +172,20 @@ export default function PharmaFlashClient() {
   useEffect(() => {
     if (!firestore) return;
 
-    const fetchAllDrugDates = async () => {
+    const fetchAllDrugData = async () => {
       const q = query(collection(firestore, 'drugHighlights'));
       const querySnapshot = await getDocs(q);
+      const newAllData = new Map<string, DrugHighlight>();
       const newDatesWithData = new Set<string>();
       querySnapshot.forEach((doc) => {
+        newAllData.set(doc.id, doc.data() as DrugHighlight);
         newDatesWithData.add(doc.id);
       });
+      setAllDrugData(newAllData);
       setDatesWithData(newDatesWithData);
     };
 
-    fetchAllDrugDates();
+    fetchAllDrugData();
   }, [firestore]);
 
   useEffect(() => {
@@ -232,6 +236,7 @@ export default function PharmaFlashClient() {
 
     // Optimistically update UI
     setDrugData(data);
+    setAllDrugData(prev => new Map(prev).set(dateString, data));
     setDatesWithData((prev) => new Set(prev).add(dateString));
     setIsEditing(false);
     setIsSaving(false);
@@ -251,6 +256,11 @@ export default function PharmaFlashClient() {
     // Optimistically update UI
     setDrugData(null);
     form.reset(emptyDrugData);
+    setAllDrugData(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(dateString);
+      return newMap;
+    });
     setDatesWithData((prev) => {
       const newSet = new Set(prev);
       newSet.delete(dateString);
@@ -295,17 +305,28 @@ export default function PharmaFlashClient() {
     try {
       const result = await getDrugInfo({ drugName });
 
+      // Create a new object for the form, preserving the original drug name from the form
+      const newFormData = { ...result, drugName: form.getValues('drugName') };
+
       if (mode === 'all') {
-        form.reset(result);
+        form.reset(newFormData);
       } else {
-        Object.keys(result).forEach((key) => {
-          const field = key as keyof DrugHighlight;
-          const currentValue = form.getValues(field);
-          if (!currentValue) {
-            form.setValue(field, result[field]);
-          }
-        });
+        // Create a copy of current form values to avoid direct mutation
+        const currentValues = { ...form.getValues() };
+        
+        // Iterate over the fetched AI data
+        for (const key in newFormData) {
+            const field = key as keyof DrugHighlight;
+            
+            // Check if the field in the current form is empty or just whitespace
+            const isFieldBlank = !currentValues[field] || /^\s*$/.test(currentValues[field]);
+            
+            if (isFieldBlank) {
+                form.setValue(field, newFormData[field]);
+            }
+        }
       }
+
 
       toast({
         title: 'AI Auto-fill Complete',
@@ -348,8 +369,8 @@ export default function PharmaFlashClient() {
         <p className="text-center text-xl font-headline text-primary mt-1 font-bold">
           भेषजगुण विज्ञान विभाग
         </p>
-        <p className="text-center text-lg mt-2 font-headline text-primary">
-          Your daily dose of Pharmacology.
+        <p className="text-center text-xl mt-2 font-headline text-primary">
+          Your Daily dose of Pharmacology.
         </p>
         <div className="absolute top-4 right-4">
           <ThemeToggle />
@@ -369,11 +390,12 @@ export default function PharmaFlashClient() {
               const formattedDate = format(date, 'yyyy-MM-dd');
               const hasData = datesWithData.has(formattedDate);
               const isSelected = formattedDate === dateString;
+              const dayDrugData = allDrugData.get(formattedDate);
 
               return (
                 <CarouselItem
                   key={date.toString()}
-                  className="basis-1/7 sm:basis-1/10 md:basis-1/12 lg:basis-[8%]"
+                  className="basis-1/5 sm:basis-1/7 md:basis-1/8 lg:basis-[12%]"
                 >
                   <Button
                     variant={isSelected ? 'default' : 'outline'}
@@ -393,6 +415,9 @@ export default function PharmaFlashClient() {
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {isToday(date) ? 'Today' : format(date, 'MMM')}
+                    </span>
+                    <span className="text-xs font-semibold text-primary truncate mt-1 h-4">
+                      {dayDrugData?.drugName}
                     </span>
                   </Button>
                 </CarouselItem>
@@ -608,3 +633,5 @@ export default function PharmaFlashClient() {
     </>
   );
 }
+
+    
