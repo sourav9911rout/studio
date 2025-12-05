@@ -37,7 +37,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar, CalendarProps } from "@/components/ui/calendar";
+import { Calendar } from "@/components/ui/calendar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import PinDialog from "./PinDialog";
@@ -50,18 +50,11 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
 import { cn } from "@/lib/utils";
 import { Textarea } from "../ui/textarea";
 import { ThemeToggle } from "../ThemeToggle";
 import { getDrugInfo } from "@/ai/flows/drug-info-flow";
-import { DayProps } from "react-day-picker";
 
 const drugSchema = z.object({
   drugName: z.string().min(1, "Drug name is required."),
@@ -94,7 +87,7 @@ const emptyDrugData: DrugHighlight = {
 export default function PharmaFlashClient() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [drugData, setDrugData] = useState<DrugHighlight | null>(null);
-  const [drugDataMap, setDrugDataMap] = useState<Map<string, string>>(new Map());
+  const [datesWithData, setDatesWithData] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
@@ -124,20 +117,17 @@ export default function PharmaFlashClient() {
   useEffect(() => {
     if (!firestore) return;
 
-    const fetchAllDrugData = async () => {
+    const fetchAllDrugDates = async () => {
         const q = query(collection(firestore, "drugHighlights"));
         const querySnapshot = await getDocs(q);
-        const dataMap = new Map<string, string>();
+        const dataSet = new Set<string>();
         querySnapshot.forEach(doc => {
-          const data = doc.data() as DrugHighlight;
-          if (data.drugName) {
-            dataMap.set(doc.id, data.drugName);
-          }
+          dataSet.add(doc.id);
         });
-        setDrugDataMap(dataMap);
+        setDatesWithData(dataSet);
     };
 
-    fetchAllDrugData();
+    fetchAllDrugDates();
   }, [firestore]);
 
   useEffect(() => {
@@ -187,7 +177,7 @@ export default function PharmaFlashClient() {
     
     // Optimistically update UI
     setDrugData(data);
-    setDrugDataMap(prev => new Map(prev).set(dateString, data.drugName));
+    setDatesWithData(prev => new Set(prev).add(dateString));
     setIsEditing(false);
     setIsSaving(false);
 
@@ -206,10 +196,10 @@ export default function PharmaFlashClient() {
     // Optimistically update UI
     setDrugData(null);
     form.reset(emptyDrugData);
-    setDrugDataMap(prev => {
-        const newMap = new Map(prev);
-        newMap.delete(dateString);
-        return newMap;
+    setDatesWithData(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(dateString);
+        return newSet;
     });
     setIsEditing(false);
 
@@ -279,50 +269,8 @@ export default function PharmaFlashClient() {
     return parse(dateStr, 'yyyy-MM-dd', new Date());
   };
   
-  const datesWithData = useMemo(() => new Set(drugDataMap.keys()), [drugDataMap]);
-  const hasDataModifier = Array.from(datesWithData).map(dateStr => parseDateString(dateStr));
+  const hasDataModifier = useMemo(() => Array.from(datesWithData).map(dateStr => parseDateString(dateStr)), [datesWithData]);
   
-  const DayWithTooltip: CalendarProps['components'] = {
-    Day: (props: DayProps) => {
-      const { date, modifiers } = props;
-      const formattedDate = format(date, 'yyyy-MM-dd');
-      const drugName = drugDataMap.get(formattedDate);
-
-      const dayContent = (
-        <div
-          className={cn(
-            'h-9 w-9 p-0 font-normal rounded-md flex items-center justify-center relative',
-            !modifiers.disabled && 'hover:bg-accent',
-            modifiers.outside && 'text-muted-foreground opacity-50',
-            modifiers.disabled && 'text-muted-foreground opacity-50',
-            modifiers.selected && 'text-primary-foreground bg-primary hover:bg-primary/90 focus:bg-primary',
-            modifiers.today && !modifiers.selected && 'bg-accent text-accent-foreground',
-          )}
-        >
-           {modifiers.hasData && !modifiers.selected && (
-            <div className="absolute inset-0 bg-primary/20 border border-primary/50 rounded-md -z-10"></div>
-          )}
-          {format(date, 'd')}
-        </div>
-      );
-
-      if (drugName && !modifiers.disabled) {
-        return (
-          <TooltipProvider delayDuration={100}>
-            <Tooltip>
-              <TooltipTrigger asChild>{dayContent}</TooltipTrigger>
-              <TooltipContent>
-                <p className="text-sm font-semibold">{drugName}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        );
-      }
-
-      return dayContent;
-    },
-  };
-
   return (
     <>
       <div className="p-6 relative">
@@ -388,7 +336,7 @@ export default function PharmaFlashClient() {
               disabled={{ before: new Date("2025-10-25"), after: new Date() }}
               initialFocus
               modifiers={{ hasData: hasDataModifier }}
-              components={DayWithTooltip}
+              modifiersStyles={{ hasData: { backgroundColor: "hsl(var(--primary) / 0.2)",  border: "1px solid hsl(var(--primary) / 0.5)"} }}
             />
           </PopoverContent>
         </Popover>
@@ -519,3 +467,5 @@ export default function PharmaFlashClient() {
     </>
   );
 }
+
+    
