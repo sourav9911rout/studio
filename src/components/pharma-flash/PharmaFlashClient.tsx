@@ -49,6 +49,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Calendar } from '@/components/ui/calendar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -274,7 +280,7 @@ export default function PharmaFlashClient() {
     }
   };
 
-  const handleAutofill = async () => {
+  const handleAutofill = async (mode: 'all' | 'blank') => {
     const drugName = form.getValues('drugName');
     if (!drugName) {
       toast({
@@ -288,18 +294,19 @@ export default function PharmaFlashClient() {
     setIsFetchingAI(true);
     try {
       const result = await getDrugInfo({ drugName });
-      form.setValue('drugClass', result.drugClass);
-      form.setValue('mechanism', result.mechanism);
-      form.setValue('uses', result.uses);
-      form.setValue('sideEffects', result.sideEffects);
-      form.setValue('routeOfAdministration', result.routeOfAdministration);
-      form.setValue('dose', result.dose);
-      form.setValue('dosageForm', result.dosageForm);
-      form.setValue('halfLife', result.halfLife);
-      form.setValue('clinicalUses', result.clinicalUses);
-      form.setValue('contraindication', result.contraindication);
-      form.setValue('offLabelUse', result.offLabelUse);
-      form.setValue('funFact', result.funFact);
+
+      if (mode === 'all') {
+        form.reset(result);
+      } else {
+        Object.keys(result).forEach((key) => {
+          const field = key as keyof DrugHighlight;
+          const currentValue = form.getValues(field);
+          if (!currentValue) {
+            form.setValue(field, result[field]);
+          }
+        });
+      }
+
       toast({
         title: 'AI Auto-fill Complete',
         description: `Information for ${drugName} has been populated.`,
@@ -341,8 +348,8 @@ export default function PharmaFlashClient() {
         <p className="text-center text-xl font-headline text-primary mt-1 font-bold">
           भेषजगुण विज्ञान विभाग
         </p>
-        <p className="text-center text-6xl mt-2 font-headline text-primary">
-          Your Daily Dose of Pharmacology.
+        <p className="text-center text-lg mt-2 font-headline text-primary">
+          Your daily dose of Pharmacology.
         </p>
         <div className="absolute top-4 right-4">
           <ThemeToggle />
@@ -517,19 +524,31 @@ export default function PharmaFlashClient() {
             </div>
             {isEditing && (
               <div className="flex justify-end gap-2 mt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleAutofill}
-                  disabled={isFetchingAI}
-                >
-                  {isFetchingAI ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="mr-2 h-4 w-4" />
-                  )}
-                  Auto-fill with AI
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={isFetchingAI}
+                    >
+                      {isFetchingAI ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="mr-2 h-4 w-4" />
+                      )}
+                      Auto-fill with AI
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => handleAutofill('all')}>
+                      Fill All Fields
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleAutofill('blank')}>
+                      Fill Only Blank Fields
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button type="button" variant="destructive">
