@@ -518,14 +518,12 @@ export default function PharmaFlashClient() {
                                         <Textarea
                                           placeholder={`Enter ${field.label.toLowerCase()}...`}
                                           {...formFieldRender}
-                                          value={formFieldRender.value ?? ''}
                                           className="font-body min-h-[100px]"
                                         />
                                       ) : (
                                         <Input
                                           placeholder={`Enter ${field.label.toLowerCase()}...`}
                                           {...formFieldRender}
-                                          value={formFieldRender.value ?? ''}
                                           className="font-body"
                                         />
                                       )}
