@@ -90,53 +90,56 @@ export default function DownloadDialog({
       }
 
       const doc = new jsPDF();
+      let isFirstPage = true;
 
-      // Add a title to the document
-      doc.setFontSize(20);
-      doc.setFont("times", "bold");
-      doc.text("Department of Pharmacology", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
-      doc.setFont("times", "normal");
-      doc.setFontSize(14);
-      doc.text("भेषजगुण विज्ञान विभाग", doc.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
-      
-      const tableData = highlights.flatMap(highlight => {
-        const highlightDate = format(parseDateString(highlight.id), "MMMM d, yyyy");
-        return [
-          [{ content: `Date: ${highlightDate}`, colSpan: 2, styles: { fontStyle: 'bold', fillColor: [230, 230, 230] } }],
-          ['Drug of the Day', highlight.drugName],
-          ['Drug Class', highlight.drugClass],
-          ['Mechanism of Action', highlight.mechanism],
-          ['Common Uses', highlight.uses],
-          ['Side Effects', highlight.sideEffects],
-          ['Route of Administration', highlight.routeOfAdministration],
-          ['Dose', highlight.dose],
-          ['Dosage Form', highlight.dosageForm],
-          ['Half-life', highlight.halfLife],
-          ['Clinical uses', highlight.clinicalUses],
-          ['Contraindication', highlight.contraindication],
-          ['Off Label Use', highlight.offLabelUse],
-          ['Fun Fact', highlight.funFact],
-        ];
-      });
-
-      autoTable(doc, {
-        startY: 35,
-        head: [['Field', 'Information']],
-        body: tableData,
-        theme: 'grid',
-        styles: {
-          font: "times", // Use a standard font
-        },
-        columnStyles: {
-          0: { fontStyle: 'bold', cellWidth: 50 },
-          1: { cellWidth: 'auto' },
-        },
-        didParseCell: function (data) {
-          // This ensures that newlines in the data are respected
-          if (typeof data.cell.raw === 'string') {
-            data.cell.text = data.cell.raw.split('\n');
-          }
+      highlights.forEach(highlight => {
+        if (!isFirstPage) {
+          doc.addPage();
         }
+
+        // Add a title to the document
+        doc.setFontSize(20);
+        doc.setFont("times", "bold");
+        doc.text("Department of Pharmacology", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+        
+        const highlightDate = format(parseDateString(highlight.id), "MMMM d, yyyy");
+        const tableData = [
+            ['Drug of the Day', highlight.drugName],
+            ['Drug Class', highlight.drugClass],
+            ['Mechanism of Action', highlight.mechanism],
+            ['Common Uses', highlight.uses],
+            ['Side Effects', highlight.sideEffects],
+            ['Route of Administration', highlight.routeOfAdministration],
+            ['Dose', highlight.dose],
+            ['Dosage Form', highlight.dosageForm],
+            ['Half-life', highlight.halfLife],
+            ['Clinical uses', highlight.clinicalUses],
+            ['Contraindication', highlight.contraindication],
+            ['Off Label Use', highlight.offLabelUse],
+            ['Fun Fact', highlight.funFact],
+        ];
+
+        autoTable(doc, {
+          startY: 35,
+          head: [[{ content: `Date: ${highlightDate}`, colSpan: 2, styles: { fontStyle: 'bold', fillColor: [230, 230, 230] } }]],
+          body: tableData,
+          theme: 'grid',
+          styles: {
+            font: "times", // Use a standard font
+          },
+          columnStyles: {
+            0: { fontStyle: 'bold', cellWidth: 50 },
+            1: { cellWidth: 'auto' },
+          },
+          didParseCell: function (data) {
+            // This ensures that newlines in the data are respected
+            if (typeof data.cell.raw === 'string') {
+              data.cell.text = data.cell.raw.split('\n');
+            }
+          }
+        });
+
+        isFirstPage = false;
       });
       
       doc.save(`pharmacology-highlights-${startDate}-to-${endDate}.pdf`);
