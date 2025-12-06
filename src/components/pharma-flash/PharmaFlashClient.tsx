@@ -147,6 +147,8 @@ export default function PharmaFlashClient() {
   const [isSaving, setIsSaving] = useState(false);
   const [isFetchingAI, setIsFetchingAI] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [isUnsavedChangesDialogOpen, setIsUnsavedChangesDialogOpen] = useState(false);
+  const [pendingDate, setPendingDate] = useState<Date | null>(null);
 
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -157,6 +159,8 @@ export default function PharmaFlashClient() {
     resolver: zodResolver(drugSchema),
     defaultValues: emptyDrugData,
   });
+
+  const { formState: { isDirty } } = form;
 
   const dateString = useMemo(
     () => format(selectedDate, 'yyyy-MM-dd'),
@@ -240,6 +244,7 @@ export default function PharmaFlashClient() {
     setDatesWithData((prev) => new Set(prev).add(dateString));
     setIsEditing(false);
     setIsSaving(false);
+    form.reset(data); // Reset form to mark it as not dirty
 
     toast({
       title: 'Success',
@@ -282,10 +287,27 @@ export default function PharmaFlashClient() {
     }
     setIsEditing(false);
   };
+  
+  const proceedWithNavigation = (targetDate: Date) => {
+    if (drugData) {
+      form.reset(drugData);
+    } else {
+      form.reset(emptyDrugData);
+    }
+    setSelectedDate(targetDate);
+    setIsCalendarOpen(false);
+    setPendingDate(null);
+    setIsUnsavedChangesDialogOpen(false);
+  };
 
-  const handleDateSelect = (date: Date | undefined) => {
-    if (date) {
-      setSelectedDate(date);
+  const handleDateNavigation = (targetDate: Date | undefined) => {
+    if (!targetDate) return;
+
+    if (isEditing && isDirty) {
+      setPendingDate(targetDate);
+      setIsUnsavedChangesDialogOpen(true);
+    } else {
+      setSelectedDate(targetDate);
       setIsCalendarOpen(false);
     }
   };
@@ -407,7 +429,7 @@ export default function PharmaFlashClient() {
                         'bg-primary/20 border-primary/50',
                       !isSelected && !hasData && 'bg-secondary/50'
                     )}
-                    onClick={() => setSelectedDate(date)}
+                    onClick={() => handleDateNavigation(date)}
                   >
                     <span className="font-medium">{format(date, 'EEE')}</span>
                     <span className="text-lg font-bold">
@@ -416,7 +438,7 @@ export default function PharmaFlashClient() {
                     <span className="text-xs text-muted-foreground">
                       {isToday(date) ? 'Today' : format(date, 'MMM')}
                     </span>
-                    <span className="text-xs font-semibold text-primary whitespace-normal text-center mt-1 h-12 leading-tight">
+                    <span className="text-xs font-semibold text-primary whitespace-normal text-center mt-1 h-[4.5rem] leading-tight">
                       {dayDrugData?.drugName}
                     </span>
                   </Button>
@@ -445,7 +467,7 @@ export default function PharmaFlashClient() {
             <Calendar
               mode="single"
               selected={selectedDate}
-              onSelect={handleDateSelect}
+              onSelect={(date) => handleDateNavigation(date)}
               disabled={{ before: new Date('2025-10-25'), after: new Date() }}
               initialFocus
               modifiers={{ hasData: hasDataModifier }}
@@ -520,14 +542,14 @@ export default function PharmaFlashClient() {
                                           placeholder={`Enter ${field.label.toLowerCase()}...`}
                                           {...formFieldRender}
                                           className="font-body min-h-[100px]"
-                                          value={formFieldRender.value || ''}
+                                          value={form.watch(field.key) || ''}
                                         />
                                       ) : (
                                         <Input
                                           placeholder={`Enter ${field.label.toLowerCase()}...`}
                                           {...formFieldRender}
                                           className="font-body"
-                                          value={formFieldRender.value || ''}
+                                          value={form.watch(field.key) || ''}
                                         />
                                       )}
                                     </FormControl>
@@ -630,6 +652,24 @@ export default function PharmaFlashClient() {
         onOpenChange={setIsDownloadDialogOpen}
         datesWithData={datesWithData}
       />
+      <AlertDialog open={isUnsavedChangesDialogOpen} onOpenChange={setIsUnsavedChangesDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes. Are you sure you want to discard them and continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingDate(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => pendingDate && proceedWithNavigation(pendingDate)}>
+              Discard & Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
