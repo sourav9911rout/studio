@@ -121,7 +121,7 @@ export default function DownloadDialog({
 
         autoTable(doc, {
           startY: 35,
-          head: [[{ content: `Date: ${highlightDate}`, colSpan: 2, styles: { fontStyle: 'bold', fillColor: [230, 230, 230] } }]],
+          head: [[{ content: `Date: ${highlightDate}`, colSpan: 2, styles: { fontStyle: 'bold', fillColor: [220, 230, 240] } }]],
           body: tableData,
           theme: 'grid',
           styles: {
