@@ -90,18 +90,13 @@ export default function DownloadDialog({
       }
 
       const doc = new jsPDF();
-      let isFirstPage = true;
+      
+      // Add a title to the document
+      doc.setFontSize(20);
+      doc.setFont("times", "bold");
+      doc.text("Department of Pharmacology", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
 
-      highlights.forEach(highlight => {
-        if (!isFirstPage) {
-          doc.addPage();
-        }
-
-        // Add a title to the document
-        doc.setFontSize(20);
-        doc.setFont("times", "bold");
-        doc.text("Department of Pharmacology", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
-        
+      const allTables = highlights.map(highlight => {
         const highlightDate = format(parseDateString(highlight.id), "MMMM d, yyyy");
         const tableData = [
             ['Drug of the Day', highlight.drugName],
@@ -119,8 +114,7 @@ export default function DownloadDialog({
             ['Fun Fact', highlight.funFact],
         ];
 
-        autoTable(doc, {
-          startY: 35,
+        return {
           head: [[{ content: `Date: ${highlightDate}`, colSpan: 2, styles: { fontStyle: 'bold', fillColor: [220, 230, 240] } }]],
           body: tableData,
           theme: 'grid',
@@ -131,15 +125,35 @@ export default function DownloadDialog({
             0: { fontStyle: 'bold', cellWidth: 50 },
             1: { cellWidth: 'auto' },
           },
-          didParseCell: function (data) {
+          didParseCell: function (data: any) {
             // This ensures that newlines in the data are respected
             if (typeof data.cell.raw === 'string') {
               data.cell.text = data.cell.raw.split('\n');
             }
           }
-        });
+        };
+      });
 
-        isFirstPage = false;
+      autoTable(doc, {
+        startY: 35,
+        body: allTables.flatMap(table => [...table.head, ...table.body]),
+        theme: 'grid',
+        styles: {
+          font: "times",
+        },
+        columnStyles: {
+          0: { fontStyle: 'bold', cellWidth: 50 },
+          1: { cellWidth: 'auto' },
+        },
+        didParseCell: function (data: any) {
+            if (data.cell.raw.hasOwnProperty('colSpan')) { // It's a header row
+                data.cell.styles.fillColor = [220, 230, 240];
+                data.cell.styles.fontStyle = 'bold';
+            }
+            if (typeof data.cell.raw === 'string') {
+              data.cell.text = data.cell.raw.split('\n');
+            }
+          }
       });
       
       doc.save(`pharmacology-highlights-${startDate}-to-${endDate}.pdf`);
