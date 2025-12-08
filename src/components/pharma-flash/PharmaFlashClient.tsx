@@ -55,13 +55,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
 import { Calendar } from '@/components/ui/calendar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -165,7 +158,7 @@ export default function PharmaFlashClient() {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isUnsavedChangesDialogOpen, setIsUnsavedChangesDialogOpen] = useState(false);
   const [pendingDate, setPendingDate] = useState<Date | null>(null);
-  const [referenceDialogData, setReferenceDialogData] = useState<{ title: string; references: string[] } | null>(null);
+  const [showReferences, setShowReferences] = useState(false);
 
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -271,6 +264,7 @@ export default function PharmaFlashClient() {
     setIsEditing(false);
     setIsSaving(false);
     form.reset(data); // Reset form to mark it as not dirty
+    setShowReferences(false); // Switch back to data view on save
 
     toast({
       title: 'Success',
@@ -312,6 +306,7 @@ export default function PharmaFlashClient() {
       form.reset(emptyDrugData);
     }
     setIsEditing(false);
+    setShowReferences(false);
   };
   
   const proceedWithNavigation = (targetDate: Date) => {
@@ -327,6 +322,7 @@ export default function PharmaFlashClient() {
     setIsCalendarOpen(false);
     setPendingDate(null);
     setIsUnsavedChangesDialogOpen(false);
+    setShowReferences(false);
   };
   
 
@@ -339,6 +335,7 @@ export default function PharmaFlashClient() {
     } else {
       setSelectedDate(targetDate);
       setIsCalendarOpen(false);
+      setShowReferences(false);
     }
   };
 
@@ -484,7 +481,7 @@ export default function PharmaFlashClient() {
                     <span className="text-xs text-muted-foreground">
                       {isToday(date) ? 'Today' : format(date, 'MMM')}
                     </span>
-                    <span className="text-xs font-semibold text-primary whitespace-normal text-center mt-1 min-h-[2.5em] h-auto leading-tight flex items-center justify-center">
+                    <span className="text-xs font-semibold text-primary whitespace-normal text-center mt-1 min-h-[4em] h-auto leading-tight flex items-center justify-center">
                       {dayDrugData?.drugName}
                     </span>
                   </Button>
@@ -535,6 +532,16 @@ export default function PharmaFlashClient() {
             Highlight for {format(selectedDate, 'MMMM d, yyyy')}
           </h2>
           <div className="flex items-center gap-2">
+            {!isEditing && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowReferences(prev => !prev)}
+              >
+                <BookText className="mr-2 h-4 w-4" />
+                {showReferences ? "Show Data" : "Show References"}
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -546,7 +553,10 @@ export default function PharmaFlashClient() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setIsPinDialogOpen(true)}
+                onClick={() => {
+                  setIsPinDialogOpen(true);
+                  setShowReferences(false);
+                }}
               >
                 <Pencil className="mr-2 h-4 w-4" /> Edit
               </Button>
@@ -602,8 +612,8 @@ export default function PharmaFlashClient() {
                         </TableCell>
                       </TableRow>
                       {formFields.map((fieldInfo) => {
-                        const fieldData = drugData ? drugData[fieldInfo.key] : null;
-                        const hasReferences = fieldData && fieldData.references && fieldData.references.length > 0;
+                        const fieldData = drugData?.[fieldInfo.key];
+                        const hasReferences = fieldData?.references && fieldData.references.length > 0;
                         
                         return (
                           <TableRow key={fieldInfo.key}>
@@ -637,24 +647,21 @@ export default function PharmaFlashClient() {
                                   )}
                                 />
                               ) : (
-                                <div className="flex items-start justify-between gap-4">
-                                  <div className="text-primary text-base min-h-[2.5rem] py-2 whitespace-pre-wrap font-body flex-grow">
-                                    {fieldData?.value || 'No data available.'}
-                                  </div>
-                                  {!isEditing && hasReferences && (
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      className="mt-1"
-                                      onClick={() => setReferenceDialogData({
-                                        title: fieldInfo.label,
-                                        references: fieldData.references as string[],
-                                      })}
-                                    >
-                                      <BookText className="mr-2 h-4 w-4" />
-                                      Reference
-                                    </Button>
+                                <div className="text-primary text-base min-h-[2.5rem] py-2 whitespace-pre-wrap font-body">
+                                  {showReferences ? (
+                                      hasReferences ? (
+                                        <ul className="list-disc space-y-2 pl-5">
+                                          {fieldData.references?.map((ref, index) => (
+                                            <li key={index}>
+                                              <a href={ref} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline break-all">
+                                                {ref}
+                                              </a>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      ) : 'No references available.'
+                                  ) : (
+                                    fieldData?.value || 'No data available.'
                                   )}
                                 </div>
                               )}
@@ -768,34 +775,6 @@ export default function PharmaFlashClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
-      <Dialog open={!!referenceDialogData} onOpenChange={() => setReferenceDialogData(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>References for {referenceDialogData?.title}</DialogTitle>
-            <DialogDescription>
-              The following sources were used by the AI to generate this information.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="max-h-[60vh] overflow-y-auto">
-            <ul className="list-disc space-y-2 pl-5">
-              {referenceDialogData?.references?.map((ref, index) => (
-                <li key={index}>
-                  <a
-                    href={ref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:underline break-all"
-                  >
-                    {ref}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
-    
