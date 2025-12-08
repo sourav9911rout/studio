@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview An AI flow to get detailed information about a specific drug.
+ * @fileOverview An AI flow to get detailed information about a specific drug, including references.
  *
  * - getDrugInfo - A function that fetches pharmacological details for a given drug name.
  * - GetDrugInfoInput - The input type for the getDrugInfo function.
@@ -16,21 +16,26 @@ const GetDrugInfoInputSchema = z.object({
 });
 export type GetDrugInfoInput = z.infer<typeof GetDrugInfoInputSchema>;
 
+const InfoWithReferenceSchema = z.object({
+    value: z.string().describe("The textual value of the information."),
+    references: z.array(z.string().url()).describe("A list of URLs pointing to the sources of the information. Must be a valid URL.")
+});
+
 // The output should match the fields we want to populate in the form.
 const GetDrugInfoOutputSchema = z.object({
-  drugName: z.string().describe('The common name of the drug.'),
-  drugClass: z.string().describe('The pharmacological class of the drug.'),
-  mechanism: z.string().describe('The mechanism of action of the drug.'),
-  uses: z.string().describe('Common clinical uses of the drug.'),
-  sideEffects: z.string().describe('Common side effects of the drug.'),
-  routeOfAdministration: z.string().describe("The route of administration for the drug."),
-  dose: z.string().describe("The typical dose of the drug."),
-  dosageForm: z.string().describe("The available dosage forms of the drug."),
-  halfLife: z.string().describe("The half-life of the drug."),
-  clinicalUses: z.string().describe("The clinical uses of the drug."),
-  contraindication: z.string().describe("Contraindications for the drug."),
-  offLabelUse: z.string().describe("Common off-label uses for the drug."),
-  funFact: z.string().describe('An interesting fun fact about the drug.'),
+  drugName: InfoWithReferenceSchema,
+  drugClass: InfoWithReferenceSchema,
+  mechanism: InfoWithReferenceSchema,
+  uses: InfoWithReferenceSchema,
+  sideEffects: InfoWithReferenceSchema,
+  routeOfAdministration: InfoWithReferenceSchema,
+  dose: InfoWithReferenceSchema,
+  dosageForm: InfoWithReferenceSchema,
+  halfLife: InfoWithReferenceSchema,
+  clinicalUses: InfoWithReferenceSchema,
+  contraindication: InfoWithReferenceSchema,
+  offLabelUse: InfoWithReferenceSchema,
+  funFact: InfoWithReferenceSchema,
 });
 export type GetDrugInfoOutput = z.infer<typeof GetDrugInfoOutputSchema>;
 
@@ -42,7 +47,12 @@ const prompt = ai.definePrompt({
   name: 'getDrugInfoPrompt',
   input: { schema: GetDrugInfoInputSchema },
   output: { schema: GetDrugInfoOutputSchema },
-  prompt: `You are a pharmacologist. Provide accurate and concise information for the drug named "{{drugName}}".
+  prompt: `You are an expert pharmacologist with a strict requirement for citing sources. Provide accurate, concise, and well-referenced information for the drug named "{{drugName}}".
+
+For each field below, you MUST provide the information as a JSON object with two keys: "value" (a string containing the information) and "references" (an array of source URLs).
+- Every piece of information must be backed by at least one verifiable, high-quality source URL (e.g., from reputable medical journals, government health agencies, or university websites).
+- The 'value' for the drug name should be the standardized common name.
+- The 'Fun Fact' must be an interesting, verifiable detail, not a general summary, and it must also be referenced.
 
 Your response must be of high quality and accuracy, suitable for medical professionals.
 
@@ -58,7 +68,7 @@ Your response must be of high quality and accuracy, suitable for medical profess
 - Clinical uses
 - Contraindication
 - Off Label Use
-- Fun Fact (must be a fun fact or other interesting detail, not a general summary).`,
+- Fun Fact`,
 });
 
 const getDrugInfoFlow = ai.defineFlow(

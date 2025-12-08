@@ -1,16 +1,22 @@
 
+
+export type InfoWithReference = {
+  value: string;
+  references: string[];
+};
+
 export type DrugHighlight = {
-  drugName: string;
-  drugClass: string;
-  mechanism: string;
-  uses: string;
-  sideEffects: string;
-  routeOfAdministration: string;
-  dose: string;
-  dosageForm: string;
-  halfLife: string;
-  clinicalUses: string;
-  contraindication: string;
-  offLabelUse: string;
-  funFact: string;
+  drugName: InfoWithReference;
+  drugClass: InfoWithReference;
+  mechanism: InfoWithReference;
+  uses: InfoWithReference;
+  sideEffects: InfoWithReference;
+  routeOfAdministration: InfoWithReference;
+  dose: InfoWithReference;
+  dosageForm: InfoWithReference;
+  halfLife: InfoWithReference;
+  clinicalUses: InfoWithReference;
+  contraindication: InfoWithReference;
+  offLabelUse: InfoWithReference;
+  funFact: InfoWithReference;
 };
