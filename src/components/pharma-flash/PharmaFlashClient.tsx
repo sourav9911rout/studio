@@ -137,6 +137,29 @@ const emptyDrugData: DrugHighlight = {
   funFact: '',
 };
 
+// Helper function to safely extract string values from potentially mixed data types
+const getSafeString = (value: any): string => {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (value && typeof value === 'object' && typeof value.value === 'string') {
+    return value.value;
+  }
+  return ''; // Return empty string for invalid formats
+};
+
+// Helper function to normalize the entire drug data object
+const normalizeDrugData = (data: any): DrugHighlight => {
+  const normalized: DrugHighlight = { ...emptyDrugData };
+  for (const key in emptyDrugData) {
+    if (Object.prototype.hasOwnProperty.call(emptyDrugData, key)) {
+      normalized[key as keyof DrugHighlight] = getSafeString(data?.[key]);
+    }
+  }
+  return normalized;
+};
+
+
 export default function PharmaFlashClient() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [drugData, setDrugData] = useState<DrugHighlight | null>(null);
@@ -185,7 +208,8 @@ export default function PharmaFlashClient() {
       const newAllData = new Map<string, DrugHighlight>();
       const newDatesWithData = new Set<string>();
       querySnapshot.forEach((doc) => {
-        newAllData.set(doc.id, doc.data() as DrugHighlight);
+        const normalized = normalizeDrugData(doc.data());
+        newAllData.set(doc.id, normalized);
         newDatesWithData.add(doc.id);
       });
       setAllDrugData(newAllData);
@@ -204,9 +228,10 @@ export default function PharmaFlashClient() {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-          const data = docSnap.data() as DrugHighlight;
-          setDrugData(data);
-          form.reset(data);
+          const data = docSnap.data();
+          const normalizedData = normalizeDrugData(data);
+          setDrugData(normalizedData);
+          form.reset(normalizedData);
         } else {
           setDrugData(null);
           form.reset(emptyDrugData);
