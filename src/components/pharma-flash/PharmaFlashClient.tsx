@@ -411,8 +411,10 @@ export default function PharmaFlashClient() {
   };
 
   const initialCarouselIndex = useMemo(() => {
+    const today = new Date();
+    const formattedToday = format(today, 'yyyy-MM-dd');
     const index = datesForNavigation.findIndex(
-      (d) => format(d, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
+      (d) => format(d, 'yyyy-MM-dd') === formattedToday
     );
     return index > -1 ? index : datesForNavigation.length - 1;
   }, [datesForNavigation]);
@@ -482,7 +484,7 @@ export default function PharmaFlashClient() {
                     <span className="text-xs text-muted-foreground">
                       {isToday(date) ? 'Today' : format(date, 'MMM')}
                     </span>
-                    <span className="text-xs font-semibold text-primary whitespace-normal text-center mt-1 min-h-[3.75em] h-auto leading-tight flex items-center justify-center">
+                    <span className="text-xs font-semibold text-primary whitespace-normal text-center mt-1 min-h-[2.5em] h-auto leading-tight flex items-center justify-center">
                       {dayDrugData?.drugName}
                     </span>
                   </Button>
@@ -599,62 +601,67 @@ export default function PharmaFlashClient() {
                           )}
                         </TableCell>
                       </TableRow>
-                      {formFields.map((fieldInfo) => (
-                        <TableRow key={fieldInfo.key}>
-                          <TableCell className="font-semibold w-1/3 align-top pt-5 font-body">
-                            {fieldInfo.label}
-                          </TableCell>
-                          <TableCell>
-                            {isEditing ? (
-                              <FormField
-                                control={form.control}
-                                name={`${fieldInfo.key}.value`}
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormControl>
-                                      {fieldInfo.isTextarea ? (
-                                        <Textarea
-                                          placeholder={`Enter ${fieldInfo.label.toLowerCase()}...`}
-                                          {...field}
-                                          className="font-body min-h-[100px]"
-                                        />
-                                      ) : (
-                                        <Input
-                                          placeholder={`Enter ${fieldInfo.label.toLowerCase()}...`}
-                                          {...field}
-                                          className="font-body"
-                                        />
-                                      )}
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                            ) : (
-                              <div className="flex items-start justify-between gap-4">
-                                <div className="text-primary text-base min-h-[2.5rem] py-2 whitespace-pre-wrap font-body flex-grow">
-                                  {(drugData && drugData[fieldInfo.key]?.value) || 'No data available.'}
+                      {formFields.map((fieldInfo) => {
+                        const fieldData = drugData ? drugData[fieldInfo.key] : null;
+                        const hasReferences = fieldData && fieldData.references && fieldData.references.length > 0;
+                        
+                        return (
+                          <TableRow key={fieldInfo.key}>
+                            <TableCell className="font-semibold w-1/3 align-top pt-5 font-body">
+                              {fieldInfo.label}
+                            </TableCell>
+                            <TableCell>
+                              {isEditing ? (
+                                <FormField
+                                  control={form.control}
+                                  name={`${fieldInfo.key}.value`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormControl>
+                                        {fieldInfo.isTextarea ? (
+                                          <Textarea
+                                            placeholder={`Enter ${fieldInfo.label.toLowerCase()}...`}
+                                            {...field}
+                                            className="font-body min-h-[100px]"
+                                          />
+                                        ) : (
+                                          <Input
+                                            placeholder={`Enter ${fieldInfo.label.toLowerCase()}...`}
+                                            {...field}
+                                            className="font-body"
+                                          />
+                                        )}
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              ) : (
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="text-primary text-base min-h-[2.5rem] py-2 whitespace-pre-wrap font-body flex-grow">
+                                    {fieldData?.value || 'No data available.'}
+                                  </div>
+                                  {!isEditing && hasReferences && (
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="mt-1"
+                                      onClick={() => setReferenceDialogData({
+                                        title: fieldInfo.label,
+                                        references: fieldData.references as string[],
+                                      })}
+                                    >
+                                      <BookText className="mr-2 h-4 w-4" />
+                                      Reference
+                                    </Button>
+                                  )}
                                 </div>
-                                {!isEditing && drugData && drugData[fieldInfo.key]?.references && drugData[fieldInfo.key].references.length > 0 && (
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="mt-1"
-                                    onClick={() => setReferenceDialogData({
-                                      title: fieldInfo.label,
-                                      references: drugData[fieldInfo.key].references as string[],
-                                    })}
-                                  >
-                                    <BookText className="mr-2 h-4 w-4" />
-                                    Reference
-                                  </Button>
-                                )}
-                              </div>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </>
                   )}
                 </TableBody>
