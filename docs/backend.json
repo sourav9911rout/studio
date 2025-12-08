@@ -15,52 +15,40 @@
           "description": "Name of the drug."
         },
         "drugClass": {
-          "type": "string",
-          "description": "Class of the drug."
+          "$ref": "#/backend/entities/InfoWithReference"
         },
         "mechanism": {
-          "type": "string",
-          "description": "Mechanism of action of the drug."
+          "$ref": "#/backend/entities/InfoWithReference"
         },
         "uses": {
-          "type": "string",
-          "description": "Common uses of the drug."
+          "$ref": "#/backend/entities/InfoWithReference"
         },
         "sideEffects": {
-          "type": "string",
-          "description": "Common side effects of the drug."
+          "$ref": "#/backend/entities/InfoWithReference"
         },
         "routeOfAdministration": {
-          "type": "string",
-          "description": "The route of administration for the drug."
+          "$ref": "#/backend/entities/InfoWithReference"
         },
         "dose": {
-          "type": "string",
-          "description": "The typical dose of the drug."
+          "$ref": "#/backend/entities/InfoWithReference"
         },
         "dosageForm": {
-          "type": "string",
-          "description": "The available dosage forms of the drug."
+          "$ref": "#/backend/entities/InfoWithReference"
         },
         "halfLife": {
-          "type": "string",
-          "description": "The half-life of the drug."
+          "$ref": "#/backend/entities/InfoWithReference"
         },
         "clinicalUses": {
-          "type": "string",
-          "description": "The clinical uses of the drug."
+          "$ref": "#/backend/entities/InfoWithReference"
         },
         "contraindication": {
-          "type": "string",
-          "description": "Contraindications for the drug."
+          "$ref": "#/backend/entities/InfoWithReference"
         },
         "offLabelUse": {
-          "type": "string",
-          "description": "Common off-label uses for the drug."
+          "$ref": "#/backend/entities/InfoWithReference"
         },
-        "additionalInformation": {
-          "type": "string",
-          "description": "Additional interesting information or a fun fact about the drug."
+        "funFact": {
+          "$ref": "#/backend/entities/InfoWithReference"
         }
       },
       "required": [
@@ -77,8 +65,28 @@
         "clinicalUses",
         "contraindication",
         "offLabelUse",
-        "additionalInformation"
+        "funFact"
       ]
+    },
+    "InfoWithReference": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "InfoWithReference",
+      "type": "object",
+      "description": "Represents a piece of information with its references.",
+      "properties": {
+        "value": {
+          "type": "string",
+          "description": "The information value."
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A list of source URLs for the information."
+        }
+      },
+      "required": ["value"]
     }
   },
   "auth": {

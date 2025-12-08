@@ -91,7 +91,6 @@ export default function DownloadDialog({
 
       const doc = new jsPDF();
       
-      // Add a title to the document
       doc.setFontSize(20);
       doc.setFont("times", "bold");
       doc.text("Department of Pharmacology", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
@@ -100,18 +99,18 @@ export default function DownloadDialog({
         const highlightDate = format(parseDateString(highlight.id), "MMMM d, yyyy");
         const tableData = [
             ['Drug of the Day', highlight.drugName],
-            ['Drug Class', highlight.drugClass],
-            ['Mechanism of Action', highlight.mechanism],
-            ['Common Uses', highlight.uses],
-            ['Side Effects', highlight.sideEffects],
-            ['Route of Administration', highlight.routeOfAdministration],
-            ['Dose', highlight.dose],
-            ['Dosage Form', highlight.dosageForm],
-            ['Half-life', highlight.halfLife],
-            ['Clinical uses', highlight.clinicalUses],
-            ['Contraindication', highlight.contraindication],
-            ['Off Label Use', highlight.offLabelUse],
-            ['Fun Fact', highlight.funFact],
+            ['Drug Class', highlight.drugClass.value],
+            ['Mechanism of Action', highlight.mechanism.value],
+            ['Common Uses', highlight.uses.value],
+            ['Side Effects', highlight.sideEffects.value],
+            ['Route of Administration', highlight.routeOfAdministration.value],
+            ['Dose', highlight.dose.value],
+            ['Dosage Form', highlight.dosageForm.value],
+            ['Half-life', highlight.halfLife.value],
+            ['Clinical uses', highlight.clinicalUses.value],
+            ['Contraindication', highlight.contraindication.value],
+            ['Off Label Use', highlight.offLabelUse.value],
+            ['Fun Fact', highlight.funFact.value],
         ];
 
         return {
@@ -119,14 +118,13 @@ export default function DownloadDialog({
           body: tableData,
           theme: 'grid',
           styles: {
-            font: "times", // Use a standard font
+            font: "times",
           },
           columnStyles: {
             0: { fontStyle: 'bold', cellWidth: 50 },
             1: { cellWidth: 'auto' },
           },
           didParseCell: function (data: any) {
-            // This ensures that newlines in the data are respected
             if (typeof data.cell.raw === 'string') {
               data.cell.text = data.cell.raw.split('\n');
             }
@@ -146,8 +144,8 @@ export default function DownloadDialog({
           1: { cellWidth: 'auto' },
         },
         didParseCell: function (data: any) {
-            if (data.cell.raw.hasOwnProperty('colSpan')) { // It's a header row
-                data.cell.styles.fillColor = [220, 230, 240];
+            if (data.cell.raw && data.cell.raw.hasOwnProperty('colSpan')) { // It's a header row
+                data.cell.styles.fillColor = [173, 216, 230];
                 data.cell.styles.fontStyle = 'bold';
             }
             if (typeof data.cell.raw === 'string') {
