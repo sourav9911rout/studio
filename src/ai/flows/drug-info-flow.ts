@@ -46,9 +46,13 @@ const prompt = ai.definePrompt({
   name: 'getDrugInfoPrompt',
   input: { schema: GetDrugInfoInputSchema },
   output: { schema: GetDrugInfoOutputSchema },
-  prompt: `You are an expert pharmacologist.
-For the drug named "{{drugName}}", provide the following information.
-For each piece of information, you MUST provide a "value" and an array of "references" which are URL sources.
+  prompt: `You are a highly-skilled and meticulous pharmacologist with a strong emphasis on evidence-based information. Your task is to provide accurate and verifiable pharmacological details for a given drug.
+
+For the drug named "{{drugName}}", you must provide the following information. For each piece of information, you are required to provide:
+1.  A 'value' containing the accurate information.
+2.  An array of 'references', where each reference is a valid, specific URL that directly supports the provided value. Do not use general homepage URLs. The reference must point to the exact page where the information can be verified.
+
+Your response must be of the highest quality and accuracy, suitable for medical professionals. If you cannot find a reliable source for a piece of information, state that the information is not available.
 
 - Drug Name
 - Drug Class
@@ -62,7 +66,7 @@ For each piece of information, you MUST provide a "value" and an array of "refer
 - Clinical uses
 - Contraindication
 - Off Label Use
-- Fun Fact (must be a fun fact or other interesting detail, not a general summary)`,
+- Fun Fact (must be a fun fact or other interesting detail, not a general summary, but still requires a valid source).`,
 });
 
 const getDrugInfoFlow = ai.defineFlow(
