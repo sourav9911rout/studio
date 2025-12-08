@@ -160,7 +160,7 @@ export default function PharmaFlashClient() {
   const [isEditing, setIsEditing] = useState(false);
   const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
   const [isDownloadDialogOpen, setIsDownloadDialogOpen] = useState(false);
-  const [isSaving, setIsSaving]_useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [isFetchingAI, setIsFetchingAI] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isUnsavedChangesDialogOpen, setIsUnsavedChangesDialogOpen] = useState(false);
