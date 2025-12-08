@@ -186,6 +186,24 @@ export default function PharmaFlashClient() {
     }
   }, [firestore, user, isUserLoading, auth]);
 
+  // Function to normalize old data structure to new one
+  const normalizeData = (data: any): DrugHighlight => {
+    const normalized = { ...emptyDrugData };
+    for (const key in data) {
+      if (Object.prototype.hasOwnProperty.call(data, key)) {
+        const fieldKey = key as keyof DrugHighlight;
+        if (typeof data[fieldKey] === 'string') {
+          // This is old data format
+          normalized[fieldKey] = { value: data[fieldKey] as string, references: [] };
+        } else {
+          // This is new data format
+          normalized[fieldKey] = data[fieldKey];
+        }
+      }
+    }
+    return normalized;
+  };
+  
   useEffect(() => {
     if (!firestore) return;
 
@@ -195,7 +213,9 @@ export default function PharmaFlashClient() {
       const newAllData = new Map<string, DrugHighlight>();
       const newDatesWithData = new Set<string>();
       querySnapshot.forEach((doc) => {
-        newAllData.set(doc.id, doc.data() as DrugHighlight);
+        const data = doc.data();
+        const normalized = normalizeData(data);
+        newAllData.set(doc.id, normalized);
         newDatesWithData.add(doc.id);
       });
       setAllDrugData(newAllData);
@@ -214,9 +234,10 @@ export default function PharmaFlashClient() {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-          const data = docSnap.data() as DrugHighlight;
-          setDrugData(data);
-          form.reset(data);
+          const data = docSnap.data();
+          const normalizedData = normalizeData(data);
+          setDrugData(normalizedData);
+          form.reset(normalizedData);
         } else {
           setDrugData(null);
           form.reset(emptyDrugData);
@@ -375,7 +396,8 @@ export default function PharmaFlashClient() {
     }
   };
 
-  const handleShowReferences = (label: string, references: string[]) => {
+  const handleShowReferences = (label: string, references: string[] | undefined) => {
+    if (!references) return;
     setCurrentReferences({ label, refs: references });
     setIsReferenceDialogOpen(true);
   };
@@ -400,13 +422,16 @@ export default function PharmaFlashClient() {
   
   const renderField = (
     label: string,
-    fieldData: InfoWithReference | undefined,
+    fieldData: any, // Can be InfoWithReference or string (for old data)
     isEditing: boolean,
     formControl: any,
     fieldName: any,
     isTextarea: boolean = false
   ) => {
-    const hasReferences = fieldData && fieldData.references && fieldData.references.length > 0;
+    const isNewFormat = typeof fieldData === 'object' && fieldData !== null && 'value' in fieldData;
+    const value = isNewFormat ? fieldData.value : (fieldData || '');
+    const references = isNewFormat ? fieldData.references : [];
+    const hasReferences = references && references.length > 0;
   
     return (
       <TableCell>
@@ -438,7 +463,7 @@ export default function PharmaFlashClient() {
             />
           ) : (
             <div className="text-primary text-base min-h-[2.5rem] py-2 whitespace-pre-wrap font-body flex-grow">
-              {(fieldData?.value) || 'No data available.'}
+              {value || 'No data available.'}
             </div>
           )}
           {!isEditing && hasReferences && (
@@ -446,7 +471,7 @@ export default function PharmaFlashClient() {
               variant="outline"
               size="sm"
               className="mt-1"
-              onClick={() => handleShowReferences(label, fieldData.references)}
+              onClick={() => handleShowReferences(label, references)}
             >
               <BookText className="mr-2 h-4 w-4" />
               Reference
@@ -731,3 +756,5 @@ export default function PharmaFlashClient() {
     </>
   );
 }
+
+    
