@@ -1,3 +1,4 @@
+
 export type DrugHighlight = {
   drugName: string;
   drugClass: string;
@@ -13,5 +14,3 @@ export type DrugHighlight = {
   offLabelUse: string;
   funFact: string;
 };
-
-    

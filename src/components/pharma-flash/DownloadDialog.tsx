@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -95,46 +96,31 @@ export default function DownloadDialog({
       doc.setFont("times", "bold");
       doc.text("Department of Pharmacology", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
 
-      const allTables = highlights.map(highlight => {
-        const highlightDate = format(parseDateString(highlight.id), "MMMM d, yyyy");
-        const tableData = [
-            ['Drug of the Day', highlight.drugName],
-            ['Drug Class', highlight.drugClass.value],
-            ['Mechanism of Action', highlight.mechanism.value],
-            ['Common Uses', highlight.uses.value],
-            ['Side Effects', highlight.sideEffects.value],
-            ['Route of Administration', highlight.routeOfAdministration.value],
-            ['Dose', highlight.dose.value],
-            ['Dosage Form', highlight.dosageForm.value],
-            ['Half-life', highlight.halfLife.value],
-            ['Clinical uses', highlight.clinicalUses.value],
-            ['Contraindication', highlight.contraindication.value],
-            ['Off Label Use', highlight.offLabelUse.value],
-            ['Fun Fact', highlight.funFact.value],
-        ];
-
-        return {
-          head: [[{ content: `Date: ${highlightDate}`, colSpan: 2, styles: { fontStyle: 'bold', fillColor: [220, 230, 240] } }]],
-          body: tableData,
-          theme: 'grid',
-          styles: {
-            font: "times",
-          },
-          columnStyles: {
-            0: { fontStyle: 'bold', cellWidth: 50 },
-            1: { cellWidth: 'auto' },
-          },
-          didParseCell: function (data: any) {
-            if (typeof data.cell.raw === 'string') {
-              data.cell.text = data.cell.raw.split('\n');
-            }
-          }
-        };
-      });
-
       autoTable(doc, {
         startY: 35,
-        body: allTables.flatMap(table => [...table.head, ...table.body]),
+        body: highlights.flatMap(highlight => {
+          const highlightDate = format(parseDateString(highlight.id), "MMMM d, yyyy");
+          const tableData = [
+              ['Drug of the Day', highlight.drugName],
+              ['Drug Class', highlight.drugClass],
+              ['Mechanism of Action', highlight.mechanism],
+              ['Common Uses', highlight.uses],
+              ['Side Effects', highlight.sideEffects],
+              ['Route of Administration', highlight.routeOfAdministration],
+              ['Dose', highlight.dose],
+              ['Dosage Form', highlight.dosageForm],
+              ['Half-life', highlight.halfLife],
+              ['Clinical uses', highlight.clinicalUses],
+              ['Contraindication', highlight.contraindication],
+              ['Off Label Use', highlight.offLabelUse],
+              ['Fun Fact', highlight.funFact],
+          ];
+
+          return [
+              [{ content: `Date: ${highlightDate}`, colSpan: 2, styles: { fontStyle: 'bold', fillColor: [220, 230, 240] } }],
+              ...tableData
+          ];
+        }),
         theme: 'grid',
         styles: {
           font: "times",
@@ -151,7 +137,7 @@ export default function DownloadDialog({
             if (typeof data.cell.raw === 'string') {
               data.cell.text = data.cell.raw.split('\n');
             }
-          }
+        }
       });
       
       doc.save(`pharmacology-highlights-${startDate}-to-${endDate}.pdf`);

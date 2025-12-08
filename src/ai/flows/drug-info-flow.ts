@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI flow to get detailed information about a specific drug.
@@ -74,5 +75,3 @@ const getDrugInfoFlow = ai.defineFlow(
     return output;
   }
 );
-
-    
