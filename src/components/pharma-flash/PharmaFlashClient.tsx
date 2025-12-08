@@ -482,7 +482,7 @@ export default function PharmaFlashClient() {
                     <span className="text-xs text-muted-foreground">
                       {isToday(date) ? 'Today' : format(date, 'MMM')}
                     </span>
-                    <span className="text-xs font-semibold text-primary whitespace-normal text-center mt-1 h-[2.5em] leading-tight flex items-center justify-center">
+                    <span className="text-xs font-semibold text-primary whitespace-normal text-center mt-1 min-h-[3.75em] h-auto leading-tight flex items-center justify-center">
                       {dayDrugData?.drugName}
                     </span>
                   </Button>
