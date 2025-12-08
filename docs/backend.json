@@ -1,50 +1,68 @@
 
 {
   "entities": {
-    "InfoWithReference": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "InfoWithReference",
-      "type": "object",
-      "description": "A piece of information that includes a value and a list of source references.",
-      "properties": {
-        "value": {
-          "type": "string",
-          "description": "The textual value of the information."
-        },
-        "references": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "format": "uri"
-          },
-          "description": "A list of URLs pointing to the sources of the information."
-        }
-      },
-      "required": ["value", "references"]
-    },
     "DrugHighlight": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "DrugHighlight",
       "type": "object",
-      "description": "Represents a drug highlight for a specific date, containing detailed information about the drug with references.",
+      "description": "Represents a drug highlight for a specific date, containing detailed information about the drug.",
       "properties": {
         "id": {
           "type": "string",
           "description": "Unique identifier for the DrugHighlight entity. Serves as the document ID in Firestore (Date in YYYY-MM-DD format)."
         },
-        "drugName": { "$ref": "#/entities/InfoWithReference" },
-        "drugClass": { "$ref": "#/entities/InfoWithReference" },
-        "mechanism": { "$ref": "#/entities/InfoWithReference" },
-        "uses": { "$ref": "#/entities/InfoWithReference" },
-        "sideEffects": { "$ref": "#/entities/InfoWithReference" },
-        "routeOfAdministration": { "$ref": "#/entities/InfoWithReference" },
-        "dose": { "$ref": "#/entities/InfoWithReference" },
-        "dosageForm": { "$ref": "#/entities/InfoWithReference" },
-        "halfLife": { "$ref": "#/entities/InfoWithReference" },
-        "clinicalUses": { "$ref": "#/entities/InfoWithReference" },
-        "contraindication": { "$ref": "#/entities/InfoWithReference" },
-        "offLabelUse": { "$ref": "#/entities/InfoWithReference" },
-        "funFact": { "$ref": "#/entities/InfoWithReference" }
+        "drugName": {
+          "type": "string",
+          "description": "The common name of the drug."
+        },
+        "drugClass": {
+          "type": "string",
+          "description": "The pharmacological class of the drug."
+        },
+        "mechanism": {
+          "type": "string",
+          "description": "The mechanism of action of the drug."
+        },
+        "uses": {
+          "type": "string",
+          "description": "Common clinical uses of the drug."
+        },
+        "sideEffects": {
+          "type": "string",
+          "description": "Notable side effects associated with the drug."
+        },
+        "routeOfAdministration": {
+          "type": "string",
+          "description": "How the drug is administered (e.g., oral, intravenous)."
+        },
+        "dose": {
+          "type": "string",
+          "description": "Typical dosage information."
+        },
+        "dosageForm": {
+          "type": "string",
+          "description": "The physical form of the drug (e.g., tablet, capsule)."
+        },
+        "halfLife": {
+          "type": "string",
+          "description": "The biological half-life of the drug."
+        },
+        "clinicalUses": {
+          "type": "string",
+          "description": "Specific clinical applications and contexts."
+        },
+        "contraindication": {
+          "type": "string",
+          "description": "Conditions or factors that serve as a reason to withhold a certain medical treatment."
+        },
+        "offLabelUse": {
+          "type": "string",
+          "description": "Uses for the drug that are not approved by the regulatory agencies."
+        },
+        "funFact": {
+          "type": "string",
+          "description": "An interesting and verifiable fact about the drug."
+        }
       },
       "required": [
         "id",

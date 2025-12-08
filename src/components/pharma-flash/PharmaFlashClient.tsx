@@ -23,7 +23,7 @@ import {
   setDocumentNonBlocking,
   deleteDocumentNonBlocking,
 } from '@/firebase/non-blocking-updates';
-import type { DrugHighlight, InfoWithReference } from '@/lib/types';
+import type { DrugHighlight } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -61,7 +61,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import PinDialog from './PinDialog';
 import DownloadDialog from './DownloadDialog';
-import ReferenceDialog from './ReferenceDialog';
 import {
   Pencil,
   Save,
@@ -71,7 +70,6 @@ import {
   Download,
   Trash2,
   Sparkles,
-  BookText,
 } from 'lucide-react';
 import {
   Carousel,
@@ -86,27 +84,21 @@ import { Textarea } from '../ui/textarea';
 import { ThemeToggle } from '../ThemeToggle';
 import { getDrugInfo } from '@/ai/flows/drug-info-flow';
 
-const infoWithReferenceSchema = z.object({
-  value: z.string().min(1, 'This field is required.'),
-  references: z.array(z.string().url()).optional(),
-});
-
 const drugSchema = z.object({
-  drugName: infoWithReferenceSchema,
-  drugClass: infoWithReferenceSchema,
-  mechanism: infoWithReferenceSchema,
-  uses: infoWithReferenceSchema,
-  sideEffects: infoWithReferenceSchema,
-  routeOfAdministration: infoWithReferenceSchema,
-  dose: infoWithReferenceSchema,
-  dosageForm: infoWithReferenceSchema,
-  halfLife: infoWithReferenceSchema,
-  clinicalUses: infoWithReferenceSchema,
-  contraindication: infoWithReferenceSchema,
-  offLabelUse: infoWithReferenceSchema,
-  funFact: infoWithReferenceSchema,
+  drugName: z.string().min(1, 'This field is required.'),
+  drugClass: z.string(),
+  mechanism: z.string(),
+  uses: z.string(),
+  sideEffects: z.string(),
+  routeOfAdministration: z.string(),
+  dose: z.string(),
+  dosageForm: z.string(),
+  halfLife: z.string(),
+  clinicalUses: z.string(),
+  contraindication: z.string(),
+  offLabelUse: z.string(),
+  funFact: z.string(),
 });
-
 
 type FormFieldType = {
   key: keyof Omit<DrugHighlight, 'drugName'>;
@@ -130,19 +122,19 @@ const formFields: FormFieldType[] = [
 ];
 
 const emptyDrugData: DrugHighlight = {
-  drugName: { value: '', references: [] },
-  drugClass: { value: '', references: [] },
-  mechanism: { value: '', references: [] },
-  uses: { value: '', references: [] },
-  sideEffects: { value: '', references: [] },
-  routeOfAdministration: { value: '', references: [] },
-  dose: { value: '', references: [] },
-  dosageForm: { value: '', references: [] },
-  halfLife: { value: '', references: [] },
-  clinicalUses: { value: '', references: [] },
-  contraindication: { value: '', references: [] },
-  offLabelUse: { value: '', references: [] },
-  funFact: { value: '', references: [] },
+  drugName: '',
+  drugClass: '',
+  mechanism: '',
+  uses: '',
+  sideEffects: '',
+  routeOfAdministration: '',
+  dose: '',
+  dosageForm: '',
+  halfLife: '',
+  clinicalUses: '',
+  contraindication: '',
+  offLabelUse: '',
+  funFact: '',
 };
 
 export default function PharmaFlashClient() {
@@ -159,9 +151,6 @@ export default function PharmaFlashClient() {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isUnsavedChangesDialogOpen, setIsUnsavedChangesDialogOpen] = useState(false);
   const [pendingDate, setPendingDate] = useState<Date | null>(null);
-  const [isReferenceDialogOpen, setIsReferenceDialogOpen] = useState(false);
-  const [currentReferences, setCurrentReferences] = useState<{label: string, refs: string[]}>({label: '', refs: []});
-
 
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -186,23 +175,6 @@ export default function PharmaFlashClient() {
     }
   }, [firestore, user, isUserLoading, auth]);
 
-  // Function to normalize old data structure to new one
-  const normalizeData = (data: any): DrugHighlight => {
-    const normalized = { ...emptyDrugData };
-    for (const key in data) {
-      if (Object.prototype.hasOwnProperty.call(data, key)) {
-        const fieldKey = key as keyof DrugHighlight;
-        if (typeof data[fieldKey] === 'string') {
-          // This is old data format
-          normalized[fieldKey] = { value: data[fieldKey] as string, references: [] };
-        } else {
-          // This is new data format
-          normalized[fieldKey] = data[fieldKey];
-        }
-      }
-    }
-    return normalized;
-  };
   
   useEffect(() => {
     if (!firestore) return;
@@ -213,9 +185,7 @@ export default function PharmaFlashClient() {
       const newAllData = new Map<string, DrugHighlight>();
       const newDatesWithData = new Set<string>();
       querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        const normalized = normalizeData(data);
-        newAllData.set(doc.id, normalized);
+        newAllData.set(doc.id, doc.data() as DrugHighlight);
         newDatesWithData.add(doc.id);
       });
       setAllDrugData(newAllData);
@@ -234,10 +204,9 @@ export default function PharmaFlashClient() {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-          const data = docSnap.data();
-          const normalizedData = normalizeData(data);
-          setDrugData(normalizedData);
-          form.reset(normalizedData);
+          const data = docSnap.data() as DrugHighlight;
+          setDrugData(data);
+          form.reset(data);
         } else {
           setDrugData(null);
           form.reset(emptyDrugData);
@@ -350,7 +319,7 @@ export default function PharmaFlashClient() {
   };
 
   const handleAutofill = async (mode: 'all' | 'blank') => {
-    const drugNameValue = form.getValues('drugName.value');
+    const drugNameValue = form.getValues('drugName');
     if (!drugNameValue) {
       toast({
         variant: 'destructive',
@@ -372,8 +341,8 @@ export default function PharmaFlashClient() {
         for (const key in result) {
           if (Object.prototype.hasOwnProperty.call(result, key)) {
             const field = key as keyof DrugHighlight;
-            if (!currentValues[field]?.value) {
-                (newValues[field] as InfoWithReference) = result[field];
+            if (!currentValues[field]) {
+                (newValues[field] as string) = result[field];
             }
           }
         }
@@ -382,7 +351,7 @@ export default function PharmaFlashClient() {
 
       toast({
         title: 'AI Auto-fill Complete',
-        description: `Information for ${result.drugName.value || drugNameValue} has been populated.`,
+        description: `Information for ${result.drugName || drugNameValue} has been populated.`,
       });
     } catch (error) {
       console.error('Error fetching data from AI:', error);
@@ -394,12 +363,6 @@ export default function PharmaFlashClient() {
     } finally {
       setIsFetchingAI(false);
     }
-  };
-
-  const handleShowReferences = (label: string, references: string[] | undefined) => {
-    if (!references) return;
-    setCurrentReferences({ label, refs: references });
-    setIsReferenceDialogOpen(true);
   };
 
   const initialCarouselIndex = useMemo(() => {
@@ -422,62 +385,44 @@ export default function PharmaFlashClient() {
   
   const renderField = (
     label: string,
-    fieldData: any, // Can be InfoWithReference or string (for old data)
+    fieldValue: string,
     isEditing: boolean,
     formControl: any,
     fieldName: any,
     isTextarea: boolean = false
   ) => {
-    const isNewFormat = typeof fieldData === 'object' && fieldData !== null && 'value' in fieldData;
-    const value = isNewFormat ? fieldData.value : (fieldData || '');
-    const references = isNewFormat ? fieldData.references : [];
-    const hasReferences = references && references.length > 0;
-  
     return (
       <TableCell>
-        <div className="flex items-start justify-between gap-4">
-          {isEditing ? (
-            <FormField
-              control={formControl}
-              name={`${fieldName}.value`}
-              render={({ field }) => (
-                <FormItem className="flex-grow">
-                  <FormControl>
-                    {isTextarea ? (
-                      <Textarea
-                        placeholder={`Enter ${label.toLowerCase()}...`}
-                        {...field}
-                        className="font-body min-h-[100px]"
-                      />
-                    ) : (
-                      <Input
-                        placeholder={`Enter ${label.toLowerCase()}...`}
-                        {...field}
-                        className="font-body"
-                      />
-                    )}
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          ) : (
-            <div className="text-primary text-base min-h-[2.5rem] py-2 whitespace-pre-wrap font-body flex-grow">
-              {value || 'No data available.'}
-            </div>
-          )}
-          {!isEditing && hasReferences && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-1"
-              onClick={() => handleShowReferences(label, references)}
-            >
-              <BookText className="mr-2 h-4 w-4" />
-              Reference
-            </Button>
-          )}
-        </div>
+        {isEditing ? (
+          <FormField
+            control={formControl}
+            name={fieldName}
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  {isTextarea ? (
+                    <Textarea
+                      placeholder={`Enter ${label.toLowerCase()}...`}
+                      {...field}
+                      className="font-body min-h-[100px]"
+                    />
+                  ) : (
+                    <Input
+                      placeholder={`Enter ${label.toLowerCase()}...`}
+                      {...field}
+                      className="font-body"
+                    />
+                  )}
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        ) : (
+          <div className="text-primary text-base min-h-[2.5rem] py-2 whitespace-pre-wrap font-body">
+            {fieldValue || 'No data available.'}
+          </div>
+        )}
       </TableCell>
     );
   };
@@ -540,7 +485,7 @@ export default function PharmaFlashClient() {
                       {isToday(date) ? 'Today' : format(date, 'MMM')}
                     </span>
                     <span className="text-xs font-semibold text-primary whitespace-normal text-center mt-1 min-h-[4em] h-auto leading-tight flex items-center justify-center">
-                      {dayDrugData?.drugName?.value}
+                      {dayDrugData?.drugName}
                     </span>
                   </Button>
                 </CarouselItem>
@@ -631,14 +576,14 @@ export default function PharmaFlashClient() {
                         <TableCell className="font-semibold w-1/3 align-top pt-5 font-body">
                           Drug of the Day
                         </TableCell>
-                        {renderField('Drug of the Day', drugData?.drugName, isEditing, form.control, 'drugName')}
+                        {renderField('Drug of the Day', drugData?.drugName || '', isEditing, form.control, 'drugName')}
                       </TableRow>
                       {formFields.map((fieldInfo) => (
                         <TableRow key={fieldInfo.key}>
                           <TableCell className="font-semibold w-1/3 align-top pt-5 font-body">
                             {fieldInfo.label}
                           </TableCell>
-                          {renderField(fieldInfo.label, drugData?.[fieldInfo.key], isEditing, form.control, fieldInfo.key, fieldInfo.isTextarea)}
+                          {renderField(fieldInfo.label, drugData?.[fieldInfo.key] || '', isEditing, form.control, fieldInfo.key, fieldInfo.isTextarea)}
                         </TableRow>
                       ))}
                     </>
@@ -729,12 +674,6 @@ export default function PharmaFlashClient() {
         onOpenChange={setIsDownloadDialogOpen}
         datesWithData={datesWithData}
       />
-       <ReferenceDialog
-        open={isReferenceDialogOpen}
-        onOpenChange={setIsReferenceDialogOpen}
-        label={currentReferences.label}
-        references={currentReferences.refs}
-      />
       <AlertDialog open={isUnsavedChangesDialogOpen} onOpenChange={setIsUnsavedChangesDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -756,5 +695,3 @@ export default function PharmaFlashClient() {
     </>
   );
 }
-
-    
