@@ -38,7 +38,7 @@ export default function ReferenceDialog({
         </DialogHeader>
         <Separator />
         <div className="py-4 space-y-2 max-h-60 overflow-y-auto">
-          {references.length > 0 ? (
+          {references && references.length > 0 ? (
             references.map((ref, index) => (
               <div key={index} className="flex items-start gap-2 text-sm">
                 <span className="text-muted-foreground">{index + 1}.</span>
