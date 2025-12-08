@@ -15,40 +15,52 @@
           "description": "Name of the drug."
         },
         "drugClass": {
-          "$ref": "#/backend/entities/InfoWithReference"
+          "type": "string",
+          "description": "The pharmacological class of the drug."
         },
         "mechanism": {
-          "$ref": "#/backend/entities/InfoWithReference"
+          "type": "string",
+          "description": "The mechanism of action of the drug."
         },
         "uses": {
-          "$ref": "#/backend/entities/InfoWithReference"
+          "type": "string",
+          "description": "Common clinical uses of the drug."
         },
         "sideEffects": {
-          "$ref": "#/backend/entities/InfoWithReference"
+          "type": "string",
+          "description": "Common side effects of the drug."
         },
         "routeOfAdministration": {
-          "$ref": "#/backend/entities/InfoWithReference"
+          "type": "string",
+          "description": "The route of administration for the drug."
         },
         "dose": {
-          "$ref": "#/backend/entities/InfoWithReference"
+          "type": "string",
+          "description": "The typical dose of the drug."
         },
         "dosageForm": {
-          "$ref": "#/backend/entities/InfoWithReference"
+          "type": "string",
+          "description": "The available dosage forms of the drug."
         },
         "halfLife": {
-          "$ref": "#/backend/entities/InfoWithReference"
+          "type": "string",
+          "description": "The half-life of the drug."
         },
         "clinicalUses": {
-          "$ref": "#/backend/entities/InfoWithReference"
+          "type": "string",
+          "description": "The clinical uses of the drug."
         },
         "contraindication": {
-          "$ref": "#/backend/entities/InfoWithReference"
+          "type": "string",
+          "description": "Contraindications for the drug."
         },
         "offLabelUse": {
-          "$ref": "#/backend/entities/InfoWithReference"
+          "type": "string",
+          "description": "Common off-label uses for the drug."
         },
         "funFact": {
-          "$ref": "#/backend/entities/InfoWithReference"
+          "type": "string",
+          "description": "An interesting fun fact about the drug."
         }
       },
       "required": [
@@ -67,26 +79,6 @@
         "offLabelUse",
         "funFact"
       ]
-    },
-    "InfoWithReference": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "InfoWithReference",
-      "type": "object",
-      "description": "Represents a piece of information with its references.",
-      "properties": {
-        "value": {
-          "type": "string",
-          "description": "The information value."
-        },
-        "references": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "A list of source URLs for the information."
-        }
-      },
-      "required": ["value"]
     }
   },
   "auth": {
@@ -117,3 +109,5 @@
     "reasoning": "Given the requirement for a 'PIN-Protected Edit Mode' and the nature of the data (drug highlights by date), the most straightforward structure is to store drug highlights in a top-level collection, using the date as the document ID. This simplifies data retrieval and updates. \n\n**Authorization Independence:** Since no user-specific data or complex access control is mentioned, and a simple PIN-based edit mode is used, denormalization isn't strictly necessary at this level.  If more granular user-based access controls are added in the future, a separate collection to store authorized editor UIDs (or a similar mechanism) can be introduced.\n\n**QAPs:**  This structure inherently supports simple `list` operations since all documents share the same security posture (date-based entries).\n"
   }
 }
+
+    

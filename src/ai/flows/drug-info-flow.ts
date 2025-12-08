@@ -15,26 +15,21 @@ const GetDrugInfoInputSchema = z.object({
 });
 export type GetDrugInfoInput = z.infer<typeof GetDrugInfoInputSchema>;
 
-const InfoWithReferenceSchema = z.object({
-  value: z.string(),
-  references: z.array(z.string()).describe('List of sources/references for this information. Should be valid URLs.'),
-});
-
 // The output should match the fields we want to populate in the form.
 const GetDrugInfoOutputSchema = z.object({
   drugName: z.string().describe('The common name of the drug.'),
-  drugClass: InfoWithReferenceSchema.describe('The pharmacological class of the drug.'),
-  mechanism: InfoWithReferenceSchema.describe('The mechanism of action of the drug.'),
-  uses: InfoWithReferenceSchema.describe('Common clinical uses of the drug.'),
-  sideEffects: InfoWithReferenceSchema.describe('Common side effects of the drug.'),
-  routeOfAdministration: InfoWithReferenceSchema.describe("The route of administration for the drug."),
-  dose: InfoWithReferenceSchema.describe("The typical dose of the drug."),
-  dosageForm: InfoWithReferenceSchema.describe("The available dosage forms of the drug."),
-  halfLife: InfoWithReferenceSchema.describe("The half-life of the drug."),
-  clinicalUses: InfoWithReferenceSchema.describe("The clinical uses of the drug."),
-  contraindication: InfoWithReferenceSchema.describe("Contraindications for the drug."),
-  offLabelUse: InfoWithReferenceSchema.describe("Common off-label uses for the drug."),
-  funFact: InfoWithReferenceSchema.describe('An interesting fun fact about the drug.'),
+  drugClass: z.string().describe('The pharmacological class of the drug.'),
+  mechanism: z.string().describe('The mechanism of action of the drug.'),
+  uses: z.string().describe('Common clinical uses of the drug.'),
+  sideEffects: z.string().describe('Common side effects of the drug.'),
+  routeOfAdministration: z.string().describe("The route of administration for the drug."),
+  dose: z.string().describe("The typical dose of the drug."),
+  dosageForm: z.string().describe("The available dosage forms of the drug."),
+  halfLife: z.string().describe("The half-life of the drug."),
+  clinicalUses: z.string().describe("The clinical uses of the drug."),
+  contraindication: z.string().describe("Contraindications for the drug."),
+  offLabelUse: z.string().describe("Common off-label uses for the drug."),
+  funFact: z.string().describe('An interesting fun fact about the drug.'),
 });
 export type GetDrugInfoOutput = z.infer<typeof GetDrugInfoOutputSchema>;
 
@@ -46,13 +41,9 @@ const prompt = ai.definePrompt({
   name: 'getDrugInfoPrompt',
   input: { schema: GetDrugInfoInputSchema },
   output: { schema: GetDrugInfoOutputSchema },
-  prompt: `You are a highly-skilled and meticulous pharmacologist with a strong emphasis on evidence-based information. Your task is to provide accurate and verifiable pharmacological details for a given drug.
+  prompt: `You are a pharmacologist. Provide accurate and concise information for the drug named "{{drugName}}".
 
-For the drug named "{{drugName}}", you must provide the following information. For each piece of information, you are required to provide:
-1.  A 'value' containing the accurate information.
-2.  An array of 'references', where each reference is a valid, specific URL that directly supports the provided value. Do not use general homepage URLs. The reference must point to the exact page where the information can be verified.
-
-Your response must be of the highest quality and accuracy, suitable for medical professionals. If you cannot find a reliable source for a piece of information, state that the information is not available.
+Your response must be of high quality and accuracy, suitable for medical professionals.
 
 - Drug Name
 - Drug Class
@@ -66,7 +57,7 @@ Your response must be of the highest quality and accuracy, suitable for medical 
 - Clinical uses
 - Contraindication
 - Off Label Use
-- Fun Fact (must be a fun fact or other interesting detail, not a general summary, but still requires a valid source).`,
+- Fun Fact (must be a fun fact or other interesting detail, not a general summary).`,
 });
 
 const getDrugInfoFlow = ai.defineFlow(
@@ -83,3 +74,5 @@ const getDrugInfoFlow = ai.defineFlow(
     return output;
   }
 );
+
+    
