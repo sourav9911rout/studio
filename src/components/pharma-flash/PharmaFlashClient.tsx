@@ -791,5 +791,4 @@ export default function PharmaFlashClient() {
     </>
   );
 }
-
     
