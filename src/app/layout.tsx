@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 export const metadata: Metadata = {
   title: 'Department of Pharmacology',
   description: 'Daily drug highlights for medical professionals.',
+  icons: null,
 };
 
 export default function RootLayout({

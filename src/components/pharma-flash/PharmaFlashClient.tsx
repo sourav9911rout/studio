@@ -146,7 +146,7 @@ const emptyDrugData: DrugHighlight = {
   dosageForm: emptyField,
   halfLife: emptyField,
   clinicalUses: emptyField,
-contraindication: emptyField,
+  contraindication: emptyField,
   offLabelUse: emptyField,
   funFact: emptyField,
 };
@@ -160,7 +160,7 @@ export default function PharmaFlashClient() {
   const [isEditing, setIsEditing] = useState(false);
   const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
   const [isDownloadDialogOpen, setIsDownloadDialogOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSaving, setIsSaving]_useState(false);
   const [isFetchingAI, setIsFetchingAI] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isUnsavedChangesDialogOpen, setIsUnsavedChangesDialogOpen] = useState(false);
@@ -635,7 +635,7 @@ export default function PharmaFlashClient() {
                                 <div className="text-primary text-base min-h-[2.5rem] py-2 whitespace-pre-wrap font-body flex-grow">
                                   {(drugData && drugData[fieldInfo.key]?.value) || 'No data available.'}
                                 </div>
-                                {!isEditing && drugData && drugData[fieldInfo.key]?.references?.length > 0 && (
+                                {!isEditing && drugData && drugData[fieldInfo.key]?.references && drugData[fieldInfo.key].references.length > 0 && (
                                   <Button
                                     type="button"
                                     variant="outline"
@@ -643,7 +643,7 @@ export default function PharmaFlashClient() {
                                     className="mt-1"
                                     onClick={() => setReferenceDialogData({
                                       title: fieldInfo.label,
-                                      references: drugData[fieldInfo.key].references,
+                                      references: drugData[fieldInfo.key].references as string[],
                                     })}
                                   >
                                     <BookText className="mr-2 h-4 w-4" />
@@ -756,7 +756,7 @@ export default function PharmaFlashClient() {
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction onClick={() => pendingDate && proceedWithNavigation(pendingDate)}>
-              Discard & Continue
+              Discard &amp; Continue
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -791,3 +791,5 @@ export default function PharmaFlashClient() {
     </>
   );
 }
+
+    
