@@ -61,6 +61,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import PinDialog from './PinDialog';
 import DownloadDialog from './DownloadDialog';
+import DuplicateDrugDialog, {
+  type DuplicateDrugInfo,
+} from './DuplicateDrugDialog';
 import {
   Pencil,
   Save,
@@ -142,10 +145,11 @@ const getSafeString = (value: any): string => {
   if (typeof value === 'string') {
     return value;
   }
-  if (value && typeof value === 'object' && typeof value.value === 'string') {
-    return value.value;
+  // Handle the object format from previous failed implementations
+  if (value && typeof value === 'object' && 'value' in value) {
+    return String(value.value || '');
   }
-  return ''; // Return empty string for invalid formats
+  return ''; // Return empty string for other invalid formats
 };
 
 // Helper function to normalize the entire drug data object
@@ -174,6 +178,8 @@ export default function PharmaFlashClient() {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isUnsavedChangesDialogOpen, setIsUnsavedChangesDialogOpen] = useState(false);
   const [pendingDate, setPendingDate] = useState<Date | null>(null);
+  const [isDuplicateDrugDialogOpen, setIsDuplicateDrugDialogOpen] = useState(false);
+  const [duplicateDrugInfo, setDuplicateDrugInfo] = useState<DuplicateDrugInfo | null>(null);
 
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -185,7 +191,7 @@ export default function PharmaFlashClient() {
     defaultValues: emptyDrugData,
   });
 
-  const { formState: { isDirty } } = form;
+  const { formState: { isDirty }, setValue } = form;
 
   const dateString = useMemo(
     () => format(selectedDate, 'yyyy-MM-dd'),
@@ -390,6 +396,43 @@ export default function PharmaFlashClient() {
     }
   };
 
+  const handleDuplicateCheck = (drugName: string) => {
+    if (!drugName) return;
+
+    for (const [date, data] of allDrugData.entries()) {
+      if (
+        data.drugName.toLowerCase() === drugName.toLowerCase() &&
+        date !== dateString
+      ) {
+        setDuplicateDrugInfo({
+          drugName: data.drugName,
+          date: format(parse(date, 'yyyy-MM-dd', new Date()), 'MMMM d, yyyy'),
+          data: data,
+        });
+        setIsDuplicateDrugDialogOpen(true);
+        break;
+      }
+    }
+  };
+
+  const handleConfirmRepeat = () => {
+    if (duplicateDrugInfo) {
+      form.reset(duplicateDrugInfo.data);
+      toast({
+        title: 'Data Copied',
+        description: `Data for ${duplicateDrugInfo.drugName} has been copied.`,
+      });
+    }
+    setIsDuplicateDrugDialogOpen(false);
+    setDuplicateDrugInfo(null);
+  };
+
+  const handleGoWithNew = () => {
+    setValue('drugName', '');
+    setIsDuplicateDrugDialogOpen(false);
+    setDuplicateDrugInfo(null);
+  };
+
   const initialCarouselIndex = useMemo(() => {
     const today = new Date();
     const formattedToday = format(today, 'yyyy-MM-dd');
@@ -410,12 +453,16 @@ export default function PharmaFlashClient() {
   
   const renderField = (
     label: string,
-    fieldValue: string,
+    fieldValue: any, // Can be string or object
     isEditing: boolean,
     formControl: any,
     fieldName: any,
-    isTextarea: boolean = false
+    isTextarea: boolean = false,
+    onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void
   ) => {
+    // Safely get the string value for display, handling both old and new data formats
+    const displayValue = getSafeString(fieldValue);
+  
     return (
       <TableCell>
         {isEditing ? (
@@ -436,6 +483,7 @@ export default function PharmaFlashClient() {
                       placeholder={`Enter ${label.toLowerCase()}...`}
                       {...field}
                       className="font-body"
+                      onBlur={fieldName === 'drugName' ? (e) => handleDuplicateCheck(e.target.value) : undefined}
                     />
                   )}
                 </FormControl>
@@ -445,7 +493,7 @@ export default function PharmaFlashClient() {
           />
         ) : (
           <div className="text-primary text-base min-h-[2.5rem] py-2 whitespace-pre-wrap font-body">
-            {fieldValue || 'No data available.'}
+            {displayValue || 'No data available.'}
           </div>
         )}
       </TableCell>
@@ -601,14 +649,14 @@ export default function PharmaFlashClient() {
                         <TableCell className="font-semibold w-1/3 align-top pt-5 font-body">
                           Drug of the Day
                         </TableCell>
-                        {renderField('Drug of the Day', drugData?.drugName || '', isEditing, form.control, 'drugName')}
+                        {renderField('Drug of the Day', drugData?.drugName, isEditing, form.control, 'drugName')}
                       </TableRow>
                       {formFields.map((fieldInfo) => (
                         <TableRow key={fieldInfo.key}>
                           <TableCell className="font-semibold w-1/3 align-top pt-5 font-body">
                             {fieldInfo.label}
                           </TableCell>
-                          {renderField(fieldInfo.label, drugData?.[fieldInfo.key] || '', isEditing, form.control, fieldInfo.key, fieldInfo.isTextarea)}
+                          {renderField(fieldInfo.label, drugData?.[fieldInfo.key], isEditing, form.control, fieldInfo.key, fieldInfo.isTextarea)}
                         </TableRow>
                       ))}
                     </>
@@ -717,6 +765,17 @@ export default function PharmaFlashClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {duplicateDrugInfo && (
+        <DuplicateDrugDialog
+          open={isDuplicateDrugDialogOpen}
+          onOpenChange={setIsDuplicateDrugDialogOpen}
+          duplicateDrugInfo={duplicateDrugInfo}
+          onConfirmRepeat={handleConfirmRepeat}
+          onGoWithNew={handleGoWithNew}
+        />
+      )}
     </>
   );
 }
+
+    
