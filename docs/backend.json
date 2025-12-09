@@ -56,8 +56,21 @@
           "description": "Conditions or factors that serve as a reason to withhold a certain medical treatment."
         },
         "offLabelUse": {
-          "type": "string",
-          "description": "Uses for the drug that are not approved by the regulatory agencies."
+          "type": "object",
+          "description": "Uses for the drug that are not approved by the regulatory agencies, with references.",
+          "properties": {
+            "value": {
+              "type": "string"
+            },
+            "references": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          },
+          "required": ["value", "references"]
         },
         "funFact": {
           "type": "string",
@@ -107,6 +120,6 @@
         }
       }
     ],
-    "reasoning": "Given the requirement for a 'PIN-Protected Edit Mode' and the nature of the data (drug highlights by date), the most straightforward structure is to store drug highlights in a top-level collection, using the date as the document ID. This simplifies data retrieval and updates. \n\n**Authorization Independence:** Since no user-specific data or complex access control is mentioned, and a simple PIN-based edit mode is used, denormalization isn't strictly necessary at this level.  If more granular user-based access controls are added in the future, a separate collection to store authorized editor UIDs (or a similar mechanism) can be introduced.\n\n**QAPs:**  This structure inherently supports simple `list` operations since all documents share the same security posture (date-based entries).\n"
+    "reasoning": "Given the requirement for a 'PIN-Protected Edit Mode' and the nature of the data (drug highlights by date), the most straightforward structure is to store drug highlights in a top-level collection, using the date as the document ID. This simplifies data retrieval and updates. The 'offLabelUse' field is structured as an object to accommodate manually added reference links, while other fields remain simple strings for straightforward data entry and display.\n\n**Authorization Independence:** Since no user-specific data or complex access control is mentioned, and a simple PIN-based edit mode is used, denormalization isn't strictly necessary at this level.  If more granular user-based access controls are added in the future, a separate collection to store authorized editor UIDs (or a similar mechanism) can be introduced.\n\n**QAPs:**  This structure inherently supports simple `list` operations since all documents share the same security posture (date-based entries).\n"
   }
 }

@@ -23,7 +23,7 @@ import {
   setDocumentNonBlocking,
   deleteDocumentNonBlocking,
 } from '@/firebase/non-blocking-updates';
-import type { DrugHighlight } from '@/lib/types';
+import type { DrugHighlight, InfoWithReference } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -64,6 +64,7 @@ import DownloadDialog from './DownloadDialog';
 import DuplicateDrugDialog, {
   type DuplicateDrugInfo,
 } from './DuplicateDrugDialog';
+import ReferenceDialog from './ReferenceDialog';
 import {
   Pencil,
   Save,
@@ -73,6 +74,7 @@ import {
   Download,
   Trash2,
   Sparkles,
+  BookText,
 } from 'lucide-react';
 import {
   Carousel,
@@ -87,6 +89,11 @@ import { Textarea } from '../ui/textarea';
 import { ThemeToggle } from '../ThemeToggle';
 import { getDrugInfo, GetDrugInfoOutput } from '@/ai/flows/drug-info-flow';
 
+const offLabelUseSchema = z.object({
+  value: z.string(),
+  references: z.array(z.string().url()),
+});
+
 const drugSchema = z.object({
   drugName: z.string().min(1, 'This field is required.'),
   drugClass: z.string(),
@@ -99,12 +106,12 @@ const drugSchema = z.object({
   halfLife: z.string(),
   clinicalUses: z.string(),
   contraindication: z.string(),
-  offLabelUse: z.string(),
+  offLabelUse: offLabelUseSchema,
   funFact: z.string(),
 });
 
 type FormFieldType = {
-  key: keyof Omit<DrugHighlight, 'drugName'>;
+  key: keyof Omit<DrugHighlight, 'drugName' | 'offLabelUse'>;
   label: string;
   isTextarea: boolean;
 };
@@ -120,7 +127,6 @@ const formFields: FormFieldType[] = [
   { key: 'halfLife', label: 'Half-life', isTextarea: false },
   { key: 'clinicalUses', label: 'Clinical uses', isTextarea: true },
   { key: 'contraindication', label: 'Contraindication', isTextarea: true },
-  { key: 'offLabelUse', label: 'Off Label Use', isTextarea: true },
   { key: 'funFact', label: 'Fun Fact', isTextarea: true },
 ];
 
@@ -136,30 +142,47 @@ const emptyDrugData: DrugHighlight = {
   halfLife: '',
   clinicalUses: '',
   contraindication: '',
-  offLabelUse: '',
+  offLabelUse: { value: '', references: [] },
   funFact: '',
 };
 
-// Helper function to safely extract string values from potentially mixed data types
-const getSafeString = (value: any): string => {
-  if (typeof value === 'string') {
-    return value;
+// Helper to safely get the display value for a field, whether it's a string or an object
+const getDisplayValue = (fieldData: any): string => {
+  if (typeof fieldData === 'string') {
+    return fieldData;
   }
-  // Handle the object format from previous failed implementations
-  if (value && typeof value === 'object' && 'value' in value) {
-    return String(value.value || '');
+  if (fieldData && typeof fieldData === 'object' && 'value' in fieldData) {
+    return fieldData.value || '';
   }
-  return ''; // Return empty string for other invalid formats
+  return '';
 };
 
-// Helper function to normalize the entire drug data object
+
+// Helper function to normalize incoming Firestore data
 const normalizeDrugData = (data: any): DrugHighlight => {
   const normalized: DrugHighlight = { ...emptyDrugData };
-  for (const key in emptyDrugData) {
-    if (Object.prototype.hasOwnProperty.call(emptyDrugData, key)) {
-      normalized[key as keyof DrugHighlight] = getSafeString(data?.[key]);
+
+  // Handle simple string fields
+  Object.keys(emptyDrugData).forEach(keyStr => {
+    const key = keyStr as keyof DrugHighlight;
+    if (key !== 'offLabelUse') {
+      normalized[key] = getDisplayValue(data?.[key]);
     }
+  });
+
+  // Handle the potentially complex offLabelUse field
+  const offLabelData = data?.offLabelUse;
+  if (typeof offLabelData === 'string') {
+    normalized.offLabelUse = { value: offLabelData, references: [] };
+  } else if (offLabelData && typeof offLabelData === 'object' && 'value' in offLabelData) {
+    normalized.offLabelUse = {
+      value: offLabelData.value || '',
+      references: Array.isArray(offLabelData.references) ? offLabelData.references : [],
+    };
+  } else {
+    normalized.offLabelUse = { value: '', references: [] };
   }
+
   return normalized;
 };
 
@@ -180,6 +203,7 @@ export default function PharmaFlashClient() {
   const [pendingDate, setPendingDate] = useState<Date | null>(null);
   const [isDuplicateDrugDialogOpen, setIsDuplicateDrugDialogOpen] = useState(false);
   const [duplicateDrugInfo, setDuplicateDrugInfo] = useState<DuplicateDrugInfo | null>(null);
+  const [isReferenceDialogOpen, setIsReferenceDialogOpen] = useState(false);
 
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -191,12 +215,14 @@ export default function PharmaFlashClient() {
     defaultValues: emptyDrugData,
   });
 
-  const { formState: { isDirty }, setValue } = form;
+  const { formState: { isDirty }, setValue, getValues, watch } = form;
 
   const dateString = useMemo(
     () => format(selectedDate, 'yyyy-MM-dd'),
     [selectedDate]
   );
+  
+  const offLabelUseValue = watch('offLabelUse');
 
   useEffect(() => {
     if (firestore && user === null && !isUserLoading) {
@@ -285,6 +311,11 @@ export default function PharmaFlashClient() {
       description: `Drug highlight for ${dateString} has been saved.`,
     });
   };
+  
+  const handleUpdateReferences = (newReferences: string[]) => {
+    setValue('offLabelUse.references', newReferences, { shouldDirty: true });
+  };
+
 
   const handleDelete = () => {
     if (!firestore) return;
@@ -350,14 +381,18 @@ export default function PharmaFlashClient() {
   };
 
   const setFormValues = (data: Partial<GetDrugInfoOutput>, options: { shouldDirty: boolean }) => {
-    Object.keys(data).forEach(key => {
-      const field = key as keyof GetDrugInfoOutput;
-      setValue(field, data[field] || '', options);
+    Object.keys(data).forEach(keyStr => {
+      const key = keyStr as keyof GetDrugInfoOutput;
+      const value = data[key];
+      if (value !== undefined) {
+        // @ts-ignore
+        setValue(key, value, options);
+      }
     });
   };
 
   const handleAutofill = async (mode: 'all' | 'blank') => {
-    const drugNameValue = form.getValues('drugName');
+    const drugNameValue = getValues('drugName');
     if (!drugNameValue) {
       toast({
         variant: 'destructive',
@@ -375,17 +410,22 @@ export default function PharmaFlashClient() {
       if (mode === 'all') {
         setFormValues(result, options);
       } else { // 'blank' mode
-        const currentValues = form.getValues();
+        const currentValues = getValues();
         const valuesToSet: Partial<DrugHighlight> = {};
-        for (const key in result) {
-          if (Object.prototype.hasOwnProperty.call(result, key)) {
-            const field = key as keyof DrugHighlight;
-            // Set value if the current field is empty/falsy
-            if (!currentValues[field]) {
-              valuesToSet[field] = result[field];
+        
+        Object.keys(result).forEach(keyStr => {
+          const key = keyStr as keyof DrugHighlight;
+          
+          if (key === 'offLabelUse') {
+            if (!currentValues.offLabelUse.value) {
+               // @ts-ignore
+              valuesToSet.offLabelUse = result.offLabelUse;
             }
+          } else if (!currentValues[key]) {
+             // @ts-ignore
+            valuesToSet[key] = result[key];
           }
-        }
+        });
         setFormValues(valuesToSet, options);
       }
 
@@ -404,6 +444,7 @@ export default function PharmaFlashClient() {
       setIsFetchingAI(false);
     }
   };
+
 
   const handleDuplicateCheck = (drugName: string) => {
     if (!drugName) return;
@@ -462,15 +503,13 @@ export default function PharmaFlashClient() {
   
   const renderField = (
     label: string,
-    fieldValue: any, // Can be string or object
+    fieldValue: any, 
     isEditing: boolean,
     formControl: any,
     fieldName: any,
-    isTextarea: boolean = false,
-    onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void
+    isTextarea: boolean = false
   ) => {
-    // Safely get the string value for display, handling both old and new data formats
-    const displayValue = getSafeString(fieldValue);
+    const displayValue = getDisplayValue(fieldValue);
   
     return (
       <TableCell>
@@ -642,16 +681,22 @@ export default function PharmaFlashClient() {
               <Table>
                 <TableBody>
                   {isLoading ? (
-                    formFields.map((field) => (
-                      <TableRow key={field.key}>
-                        <TableCell className="font-semibold w-1/3 font-body">
-                          {field.label}
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-8 w-full" />
-                        </TableCell>
+                     <>
+                      <TableRow>
+                        <TableCell className="font-semibold w-1/3 font-body">Drug of the Day</TableCell>
+                        <TableCell><Skeleton className="h-8 w-full" /></TableCell>
                       </TableRow>
-                    ))
+                      {formFields.map((field) => (
+                        <TableRow key={field.key}>
+                          <TableCell className="font-semibold w-1/3 font-body">{field.label}</TableCell>
+                          <TableCell><Skeleton className="h-8 w-full" /></TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow>
+                          <TableCell className="font-semibold w-1/3 font-body">Off Label Use</TableCell>
+                          <TableCell><Skeleton className="h-8 w-full" /></TableCell>
+                        </TableRow>
+                    </>
                   ) : (
                     <>
                       <TableRow>
@@ -668,6 +713,57 @@ export default function PharmaFlashClient() {
                           {renderField(fieldInfo.label, drugData?.[fieldInfo.key], isEditing, form.control, fieldInfo.key, fieldInfo.isTextarea)}
                         </TableRow>
                       ))}
+                      <TableRow>
+                         <TableCell className="font-semibold w-1/3 align-top pt-5 font-body">
+                          Off Label Use
+                        </TableCell>
+                        <TableCell>
+                          {isEditing ? (
+                            <div className="space-y-2">
+                               <FormField
+                                control={form.control}
+                                name="offLabelUse.value"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormControl>
+                                      <Textarea
+                                        placeholder="Enter off label use..."
+                                        {...field}
+                                        className="font-body min-h-[100px]"
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <Button type="button" variant="outline" size="sm" onClick={() => setIsReferenceDialogOpen(true)}>
+                                <BookText className="mr-2 h-4 w-4" />
+                                References ({offLabelUseValue?.references?.length || 0})
+                              </Button>
+                            </div>
+                          ) : (
+                            <div>
+                              <div className="text-primary text-base min-h-[2.5rem] py-2 whitespace-pre-wrap font-body">
+                                {getDisplayValue(drugData?.offLabelUse) || 'No data available.'}
+                              </div>
+                              {drugData?.offLabelUse?.references && drugData.offLabelUse.references.length > 0 && (
+                                <div className="mt-2 space-y-1">
+                                  <h4 className="text-sm font-semibold text-muted-foreground">References:</h4>
+                                  <ul className="list-disc list-inside space-y-1">
+                                    {drugData.offLabelUse.references.map((ref, index) => (
+                                      <li key={index}>
+                                        <a href={ref} target="_blank" rel="noopener noreferrer" className="text-primary text-sm underline-offset-4 hover:underline break-all">
+                                          {ref}
+                                        </a>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
                     </>
                   )}
                 </TableBody>
@@ -756,6 +852,12 @@ export default function PharmaFlashClient() {
         onOpenChange={setIsDownloadDialogOpen}
         datesWithData={datesWithData}
       />
+      <ReferenceDialog
+        open={isReferenceDialogOpen}
+        onOpenChange={setIsReferenceDialogOpen}
+        references={offLabelUseValue?.references || []}
+        onSave={handleUpdateReferences}
+      />
       <AlertDialog open={isUnsavedChangesDialogOpen} onOpenChange={setIsUnsavedChangesDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -786,5 +888,3 @@ export default function PharmaFlashClient() {
     </>
   );
 }
-
-    

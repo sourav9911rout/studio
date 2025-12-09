@@ -29,7 +29,10 @@ const GetDrugInfoOutputSchema = z.object({
   halfLife: z.string(),
   clinicalUses: z.string(),
   contraindication: z.string(),
-  offLabelUse: z.string(),
+  offLabelUse: z.object({
+    value: z.string(),
+    references: z.array(z.string().url()),
+  }),
   funFact: z.string(),
 });
 export type GetDrugInfoOutput = z.infer<typeof GetDrugInfoOutputSchema>;
@@ -43,6 +46,9 @@ const prompt = ai.definePrompt({
   input: { schema: GetDrugInfoInputSchema },
   output: { schema: GetDrugInfoOutputSchema },
   prompt: `You are an expert pharmacologist. Provide accurate and concise information for the drug named "{{drugName}}".
+
+For the 'offLabelUse' field, provide the text description in the 'value' property and a list of source URLs in the 'references' property.
+For all other fields, provide a simple string value.
 
 Your response must be of high quality and accuracy, suitable for medical professionals.
 Return only the requested information as a JSON object with the specified keys. Do not include any extra text or explanations.
@@ -58,7 +64,7 @@ Return only the requested information as a JSON object with the specified keys. 
 - Half-life
 - Clinical uses
 - Contraindication
-- Off Label Use
+- Off Label Use (with value and references)
 - Fun Fact`,
 });
 
@@ -76,5 +82,3 @@ const getDrugInfoFlow = ai.defineFlow(
     return output;
   }
 );
-
-    

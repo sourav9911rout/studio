@@ -1,4 +1,9 @@
 
+export type InfoWithReference = {
+  value: string;
+  references: string[];
+};
+
 export type DrugHighlight = {
   drugName: string;
   drugClass: string;
@@ -11,6 +16,6 @@ export type DrugHighlight = {
   halfLife: string;
   clinicalUses: string;
   contraindication: string;
-  offLabelUse: string;
+  offLabelUse: InfoWithReference;
   funFact: string;
 };
