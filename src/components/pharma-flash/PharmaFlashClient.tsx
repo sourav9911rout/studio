@@ -85,7 +85,7 @@ import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 import { cn } from '@/lib/utils';
 import { Textarea } from '../ui/textarea';
 import { ThemeToggle } from '../ThemeToggle';
-import { getDrugInfo } from '@/ai/flows/drug-info-flow';
+import { getDrugInfo, GetDrugInfoOutput } from '@/ai/flows/drug-info-flow';
 
 const drugSchema = z.object({
   drugName: z.string().min(1, 'This field is required.'),
@@ -349,6 +349,13 @@ export default function PharmaFlashClient() {
     }
   };
 
+  const setFormValues = (data: Partial<GetDrugInfoOutput>, options: { shouldDirty: boolean }) => {
+    Object.keys(data).forEach(key => {
+      const field = key as keyof GetDrugInfoOutput;
+      setValue(field, data[field] || '', options);
+    });
+  };
+
   const handleAutofill = async (mode: 'all' | 'blank') => {
     const drugNameValue = form.getValues('drugName');
     if (!drugNameValue) {
@@ -363,21 +370,23 @@ export default function PharmaFlashClient() {
     setIsFetchingAI(true);
     try {
       const result = await getDrugInfo({ drugName: drugNameValue });
+      const options = { shouldDirty: true };
 
       if (mode === 'all') {
-        form.reset(result);
+        setFormValues(result, options);
       } else { // 'blank' mode
         const currentValues = form.getValues();
-        const newValues = { ...currentValues };
+        const valuesToSet: Partial<DrugHighlight> = {};
         for (const key in result) {
           if (Object.prototype.hasOwnProperty.call(result, key)) {
             const field = key as keyof DrugHighlight;
+            // Set value if the current field is empty/falsy
             if (!currentValues[field]) {
-                (newValues[field] as string) = result[field];
+              valuesToSet[field] = result[field];
             }
           }
         }
-        form.reset(newValues);
+        setFormValues(valuesToSet, options);
       }
 
       toast({
@@ -417,7 +426,7 @@ export default function PharmaFlashClient() {
 
   const handleConfirmRepeat = () => {
     if (duplicateDrugInfo) {
-      form.reset(duplicateDrugInfo.data);
+      setFormValues(duplicateDrugInfo.data, { shouldDirty: true });
       toast({
         title: 'Data Copied',
         description: `Data for ${duplicateDrugInfo.drugName} has been copied.`,
@@ -428,7 +437,7 @@ export default function PharmaFlashClient() {
   };
 
   const handleGoWithNew = () => {
-    setValue('drugName', '');
+    setValue('drugName', '', { shouldDirty: true });
     setIsDuplicateDrugDialogOpen(false);
     setDuplicateDrugInfo(null);
   };
