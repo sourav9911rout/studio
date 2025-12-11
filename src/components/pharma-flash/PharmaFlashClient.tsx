@@ -287,7 +287,7 @@ export default function PharmaFlashClient() {
   const datesForNavigation = useMemo(() => {
     const today = new Date();
     return eachDayOfInterval({
-      start: new Date('2025-10-25'),
+      start: new Date('2024-01-01'),
       end: today,
     }).sort((a, b) => a.getTime() - b.getTime());
   }, []);
@@ -635,7 +635,7 @@ export default function PharmaFlashClient() {
               mode="single"
               selected={selectedDate}
               onSelect={(date) => handleDateNavigation(date)}
-              disabled={{ before: new Date('2025-10-25'), after: new Date() }}
+              disabled={{ before: new Date('2024-01-01'), after: new Date() }}
               initialFocus
               modifiers={{ hasData: hasDataModifier }}
               modifiersStyles={{

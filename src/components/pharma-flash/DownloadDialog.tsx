@@ -234,7 +234,7 @@ export default function DownloadDialog({
             numberOfMonths={1}
             modifiers={{ hasData: hasDataModifier }}
             modifiersStyles={{ hasData: { backgroundColor: "hsl(var(--primary) / 0.2)",  border: "1px solid hsl(var(--primary) / 0.5)"} }}
-            disabled={{ before: new Date("2025-10-25"), after: new Date() }}
+            disabled={{ before: new Date("2024-01-01"), after: new Date() }}
           />
         </div>
         <DialogFooter>
