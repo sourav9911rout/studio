@@ -26,7 +26,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
-import { DrugHighlight } from "@/lib/types";
+import { DrugHighlight, InfoWithReference } from "@/lib/types";
 import { Download, Loader2 } from "lucide-react";
 
 interface DownloadDialogProps {
@@ -34,6 +34,18 @@ interface DownloadDialogProps {
   onOpenChange: (open: boolean) => void;
   datesWithData: Set<string>;
 }
+
+// Helper to safely get the display value for a field, whether it's a string or an object
+const getDisplayValue = (fieldData: any): string => {
+  if (typeof fieldData === 'string') {
+    return fieldData;
+  }
+  if (fieldData && typeof fieldData === 'object' && 'value' in fieldData) {
+    return fieldData.value || '';
+  }
+  return '';
+};
+
 
 export default function DownloadDialog({
   open,
@@ -48,7 +60,7 @@ export default function DownloadDialog({
   const parseDateString = (dateStr: string): Date => {
     const [year, month, day] = dateStr.split('-').map(Number);
     // Create date in UTC to avoid timezone issues with date-fns format
-    return new Date(year, month - 1, day);
+    return new Date(Date.UTC(year, month - 1, day));
   };
 
   const handleDownload = async () => {
@@ -96,48 +108,88 @@ export default function DownloadDialog({
       doc.setFont("times", "bold");
       doc.text("Department of Pharmacology", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
 
-      autoTable(doc, {
-        startY: 35,
-        body: highlights.flatMap(highlight => {
-          const highlightDate = format(parseDateString(highlight.id), "MMMM d, yyyy");
-          const tableData = [
-              ['Drug of the Day', highlight.drugName],
-              ['Drug Class', highlight.drugClass],
-              ['Mechanism of Action', highlight.mechanism],
-              ['Common Uses', highlight.uses],
-              ['Side Effects', highlight.sideEffects],
-              ['Route of Administration', highlight.routeOfAdministration],
-              ['Dose', highlight.dose],
-              ['Dosage Form', highlight.dosageForm],
-              ['Half-life', highlight.halfLife],
-              ['Clinical uses', highlight.clinicalUses],
-              ['Contraindication', highlight.contraindication],
-              ['Off Label Use', highlight.offLabelUse],
-              ['Fun Fact', highlight.funFact],
-          ];
+      doc.setFontSize(16);
+      doc.setFont("times", "normal");
+      doc.text(`Drug Highlights from ${format(range.from, "MMMM d, yyyy")} to ${format(range.to, "MMMM d, yyyy")}`, doc.internal.pageSize.getWidth() / 2, 30, { align: 'center' });
 
-          return [
-              [{ content: `Date: ${highlightDate}`, colSpan: 2, styles: { fontStyle: 'bold', fillColor: [220, 230, 240] } }],
-              ...tableData
-          ];
-        }),
-        theme: 'grid',
-        styles: {
-          font: "times",
-        },
-        columnStyles: {
-          0: { fontStyle: 'bold', cellWidth: 50 },
-          1: { cellWidth: 'auto' },
-        },
-        didParseCell: function (data: any) {
-            if (data.cell.raw && data.cell.raw.hasOwnProperty('colSpan')) { // It's a header row
-                data.cell.styles.fillColor = [173, 216, 230];
-                data.cell.styles.fontStyle = 'bold';
-            }
-            if (typeof data.cell.raw === 'string') {
-              data.cell.text = data.cell.raw.split('\n');
-            }
+      let firstPage = true;
+
+      highlights.forEach(highlight => {
+        if (!firstPage) {
+          doc.addPage();
         }
+        firstPage = false;
+        
+        const highlightDate = format(parseDateString(highlight.id), "MMMM d, yyyy");
+        doc.setFontSize(14);
+        doc.setFont("times", "bold");
+        doc.text(`Highlight for: ${highlightDate}`, 14, 20);
+
+        const offLabelUse = highlight.offLabelUse as unknown as InfoWithReference | string;
+        let offLabelValue = '';
+        let offLabelRefs: string[] = [];
+
+        if (typeof offLabelUse === 'string') {
+          offLabelValue = offLabelUse;
+        } else if (offLabelUse && typeof offLabelUse === 'object') {
+          offLabelValue = offLabelUse.value || '';
+          offLabelRefs = offLabelUse.references || [];
+        }
+        
+        const referencesContent = offLabelRefs.length > 0 
+          ? `${offLabelValue}\n\nReferences:\n${offLabelRefs.join('\n')}`
+          : offLabelValue;
+
+        const tableData = [
+            ['Drug of the Day', getDisplayValue(highlight.drugName)],
+            ['Drug Class', getDisplayValue(highlight.drugClass)],
+            ['Mechanism of Action', getDisplayValue(highlight.mechanism)],
+            ['Common Uses', getDisplayValue(highlight.uses)],
+            ['Side Effects', getDisplayValue(highlight.sideEffects)],
+            ['Route of Administration', getDisplayValue(highlight.routeOfAdministration)],
+            ['Dose', getDisplayValue(highlight.dose)],
+            ['Dosage Form', getDisplayValue(highlight.dosageForm)],
+            ['Half-life', getDisplayValue(highlight.halfLife)],
+            ['Clinical uses', getDisplayValue(highlight.clinicalUses)],
+            ['Contraindication', getDisplayValue(highlight.contraindication)],
+            ['Off Label Use', referencesContent],
+            ['Fun Fact', getDisplayValue(highlight.funFact)],
+        ];
+
+        autoTable(doc, {
+          startY: 30,
+          head: [['Field', 'Information']],
+          body: tableData,
+          theme: 'grid',
+          headStyles: {
+            fillColor: [22, 160, 133], // A teal color
+            textColor: 255,
+            fontStyle: 'bold',
+            font: 'times',
+          },
+          styles: {
+            font: "times",
+            fontSize: 12,
+            cellPadding: 3,
+          },
+          columnStyles: {
+            0: { fontStyle: 'bold', cellWidth: 50 },
+            1: { cellWidth: 'auto' },
+          },
+          alternateRowStyles: {
+            fillColor: [240, 240, 240] // Light gray for alternate rows
+          },
+          didParseCell: (data) => {
+            // For clickable links in the Off Label Use section
+            if (data.row.section === 'body' && data.column.index === 1 && data.cell.raw) {
+              const text = data.cell.raw.toString();
+              if (text.includes('https://') || text.includes('http://')) {
+                 // We don't need special handling here, autoTable handles links automatically if text is a URL.
+                 // The text splitting logic below will handle creating multiple lines for text + links.
+              }
+            }
+          },
+        });
       });
       
       doc.save(`pharmacology-highlights-${startDate}-to-${endDate}.pdf`);
@@ -203,3 +255,5 @@ export default function DownloadDialog({
     </Dialog>
   );
 }
+
+    
