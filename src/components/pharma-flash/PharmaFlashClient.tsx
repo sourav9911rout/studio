@@ -217,7 +217,7 @@ export default function PharmaFlashClient() {
     defaultValues: emptyDrugData,
   });
 
-  const { formState: { isDirty }, setValue, getValues, watch } = form;
+  const { formState: { isDirty }, setValue, getValues, watch, reset } = form;
 
   const dateString = useMemo(
     () => format(selectedDate, 'yyyy-MM-dd'),
@@ -270,10 +270,10 @@ export default function PharmaFlashClient() {
           const data = docSnap.data();
           const normalizedData = normalizeDrugData(data);
           setDrugData(normalizedData);
-          form.reset(normalizedData);
+          reset(normalizedData);
         } else {
           setDrugData(null);
-          form.reset(emptyDrugData);
+          reset(emptyDrugData);
         }
       } catch (error) {
         console.error('Error fetching drug data:', error);
@@ -289,7 +289,7 @@ export default function PharmaFlashClient() {
     };
 
     fetchDrugData();
-  }, [dateString, form, toast, firestore]);
+  }, [dateString, reset, toast, firestore]);
 
   const datesForNavigation = useMemo(() => {
     const today = new Date();
@@ -313,7 +313,7 @@ export default function PharmaFlashClient() {
     setDatesWithData((prev) => new Set(prev).add(dateString));
     setIsEditing(false);
     setIsSaving(false);
-    form.reset(data); // Reset form to mark it as not dirty
+    reset(data); // Reset form to mark it as not dirty
 
     toast({
       title: 'Success',
@@ -334,7 +334,7 @@ export default function PharmaFlashClient() {
 
     // Optimistically update UI
     setDrugData(null);
-    form.reset(emptyDrugData);
+    reset(emptyDrugData);
     setAllDrugData(prev => {
       const newMap = new Map(prev);
       newMap.delete(dateString);
@@ -355,9 +355,9 @@ export default function PharmaFlashClient() {
 
   const handleCancelEdit = () => {
     if (drugData) {
-      form.reset(drugData);
+      reset(drugData);
     } else {
-      form.reset(emptyDrugData);
+      reset(emptyDrugData);
     }
     setIsEditing(false);
   };
@@ -365,9 +365,9 @@ export default function PharmaFlashClient() {
   const proceedWithNavigation = (targetDate: Date) => {
     if (isDirty) {
       if (drugData) {
-        form.reset(drugData);
+        reset(drugData);
       } else {
-        form.reset(emptyDrugData);
+        reset(emptyDrugData);
       }
     }
     setSelectedDate(targetDate);
@@ -493,13 +493,14 @@ export default function PharmaFlashClient() {
   };
 
   const initialCarouselIndex = useMemo(() => {
+    if (!isClient) return 0; // Return a default for SSR
     const today = startOfToday();
     const formattedToday = format(today, 'yyyy-MM-dd');
     const index = datesForNavigation.findIndex(
       (d) => format(d, 'yyyy-MM-dd') === formattedToday
     );
     return index > -1 ? index : datesForNavigation.length - 1;
-  }, [datesForNavigation]);
+  }, [datesForNavigation, isClient]);
 
 
   const parseDateString = (dateStr: string): Date => {
@@ -898,4 +899,3 @@ export default function PharmaFlashClient() {
     </>
   );
 }
-
