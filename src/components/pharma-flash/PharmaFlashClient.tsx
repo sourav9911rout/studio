@@ -10,6 +10,7 @@ import {
   isToday,
   eachDayOfInterval,
   parse,
+  startOfToday,
 } from 'date-fns';
 import {
   doc,
@@ -188,7 +189,8 @@ const normalizeDrugData = (data: any): DrugHighlight => {
 
 
 export default function PharmaFlashClient() {
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [isClient, setIsClient] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(startOfToday());
   const [drugData, setDrugData] = useState<DrugHighlight | null>(null);
   const [allDrugData, setAllDrugData] = useState<Map<string, DrugHighlight>>(new Map());
   const [datesWithData, setDatesWithData] = useState<Set<string>>(new Set());
@@ -223,6 +225,11 @@ export default function PharmaFlashClient() {
   );
   
   const offLabelUseValue = watch('offLabelUse');
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
 
   useEffect(() => {
     if (firestore && user === null && !isUserLoading) {
@@ -286,11 +293,13 @@ export default function PharmaFlashClient() {
 
   const datesForNavigation = useMemo(() => {
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     return eachDayOfInterval({
       start: new Date('2024-01-01'),
       end: today,
     }).sort((a, b) => a.getTime() - b.getTime());
   }, []);
+
 
   const handleSave = async (data: DrugHighlight) => {
     if (!firestore) return;
@@ -484,13 +493,14 @@ export default function PharmaFlashClient() {
   };
 
   const initialCarouselIndex = useMemo(() => {
-    const today = new Date();
+    const today = startOfToday();
     const formattedToday = format(today, 'yyyy-MM-dd');
     const index = datesForNavigation.findIndex(
       (d) => format(d, 'yyyy-MM-dd') === formattedToday
     );
     return index > -1 ? index : datesForNavigation.length - 1;
   }, [datesForNavigation]);
+
 
   const parseDateString = (dateStr: string): Date => {
     return parse(dateStr, 'yyyy-MM-dd', new Date());
@@ -603,7 +613,7 @@ export default function PharmaFlashClient() {
                       {format(date, 'd')}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      {isToday(date) ? 'Today' : format(date, 'MMM')}
+                      {isClient && isToday(date) ? 'Today' : format(date, 'MMM')}
                     </span>
                     <span className="text-xs font-semibold text-primary whitespace-normal text-center mt-1 min-h-[4em] h-auto leading-tight flex items-center justify-center">
                       {dayDrugData?.drugName}
@@ -888,3 +898,4 @@ export default function PharmaFlashClient() {
     </>
   );
 }
+
