@@ -5,11 +5,11 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "DrugHighlight",
       "type": "object",
-      "description": "Represents a drug highlight for a specific date, containing detailed information about the drug.",
+      "description": "Represents a single drug's pharmacological information.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the DrugHighlight entity. Serves as the document ID in Firestore (Date in YYYY-MM-DD format)."
+          "description": "A unique identifier for this specific drug entry (e.g., a UUID)."
         },
         "drugName": {
           "type": "string",
@@ -93,6 +93,27 @@
         "offLabelUse",
         "funFact"
       ]
+    },
+    "DailyHighlight": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "DailyHighlight",
+      "type": "object",
+      "description": "A document representing a single day, containing a list of drug highlights for that day.",
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "The date for these highlights in YYYY-MM-DD format. This corresponds to the document ID."
+        },
+        "drugs": {
+          "type": "array",
+          "description": "A list of drug highlights for the day.",
+          "items": {
+            "$ref": "#/backend/entities/DrugHighlight"
+          }
+        }
+      },
+      "required": ["date", "drugs"]
     }
   },
   "auth": {
@@ -106,11 +127,11 @@
       {
         "path": "/drugHighlights/{date}",
         "definition": {
-          "entityName": "DrugHighlight",
+          "entityName": "DailyHighlight",
           "schema": {
-            "$ref": "#/backend/entities/DrugHighlight"
+            "$ref": "#/backend/entities/DailyHighlight"
           },
-          "description": "Stores drug highlights. The 'date' parameter serves as the document ID (YYYY-MM-DD format).",
+          "description": "Stores a list of drug highlights for a specific day. The 'date' parameter serves as the document ID (YYYY-MM-DD format).",
           "params": [
             {
               "name": "date",
@@ -120,6 +141,6 @@
         }
       }
     ],
-    "reasoning": "Given the requirement for a 'PIN-Protected Edit Mode' and the nature of the data (drug highlights by date), the most straightforward structure is to store drug highlights in a top-level collection, using the date as the document ID. This simplifies data retrieval and updates. The 'offLabelUse' field is structured as an object to accommodate manually added reference links, while other fields remain simple strings for straightforward data entry and display.\n\n**Authorization Independence:** Since no user-specific data or complex access control is mentioned, and a simple PIN-based edit mode is used, denormalization isn't strictly necessary at this level.  If more granular user-based access controls are added in the future, a separate collection to store authorized editor UIDs (or a similar mechanism) can be introduced.\n\n**QAPs:**  This structure inherently supports simple `list` operations since all documents share the same security posture (date-based entries).\n"
+    "reasoning": "The data structure is changed to support multiple drugs per day. Each document in the `drugHighlights` collection is now a `DailyHighlight` object, identified by the date. This object contains an array of `DrugHighlight` objects, allowing for multiple entries per day. This structure is efficient for querying all drugs for a given day."
   }
 }

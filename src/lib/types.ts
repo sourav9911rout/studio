@@ -5,6 +5,7 @@ export type InfoWithReference = {
 };
 
 export type DrugHighlight = {
+  id: string; // Unique ID for each drug within a day
   drugName: string;
   drugClass: string;
   mechanism: string;
@@ -18,4 +19,9 @@ export type DrugHighlight = {
   contraindication: string;
   offLabelUse: InfoWithReference;
   funFact: string;
+};
+
+export type DailyHighlight = {
+  date: string; // YYYY-MM-DD
+  drugs: DrugHighlight[];
 };
