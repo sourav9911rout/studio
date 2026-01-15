@@ -771,17 +771,15 @@ export default function PharmaFlashClient() {
                     <Skeleton className="h-24 w-full" />
                 </div>
               ) : fields.length > 0 ? (
-                <Accordion type="multiple" defaultValue={fields.map(f => f.id)} className="w-full space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {fields.map((field, index) => (
-                      <AccordionItem value={field.id} key={field.id} className="border rounded-lg overflow-hidden">
-                        <AccordionTrigger className="px-4 py-2 bg-secondary/50 hover:no-underline flex justify-between items-center w-full">
+                      <div key={field.id} className="border rounded-lg overflow-hidden flex flex-col">
+                        <div className="px-4 py-2 bg-secondary/50 flex justify-between items-center">
                            <div className="flex items-center gap-2">
-                                <GripVertical className="h-5 w-5 text-muted-foreground" />
                                 <span className="font-semibold text-lg">{getValues(`drugs.${index}.drugName`) || `New Drug ${index + 1}`}</span>
                            </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="p-4">
-                        <div className="space-y-4">
+                        </div>
+                        <div className="p-4 space-y-4 flex-grow">
                             {/* Drug Name */}
                             <div className="flex items-start gap-4">
                                 <label className="w-1/3 text-sm font-semibold pt-2 text-right">Drug of the Day</label>
@@ -850,34 +848,32 @@ export default function PharmaFlashClient() {
                                   )}
                                 </div>
                             </div>
-                            
-                            {isEditing && (
-                                <div className="flex justify-end items-center gap-2 pt-4 border-t mt-4">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button type="button" variant="outline" size="sm" disabled={isFetchingAI}>
-                                                {isFetchingAI ? ( <Loader2 className="mr-2 h-4 w-4 animate-spin" /> ) : ( <Sparkles className="mr-2 h-4 w-4" /> )}
-                                                Auto-fill
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent>
-                                            <DropdownMenuItem onClick={() => handleAutofill(index, 'all')}>Fill All Fields</DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleAutofill(index, 'blank')}>Fill Blank Fields</DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-
-                                    <Button type="button" variant="destructive" size="sm" onClick={() => handleDeleteDrug(index)}>
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete Drug
-                                    </Button>
-                                </div>
-                            )}
-
                         </div>
-                        </AccordionContent>
-                      </AccordionItem>
+                        
+                        {isEditing && (
+                            <div className="flex justify-end items-center gap-2 p-4 border-t mt-auto">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button type="button" variant="outline" size="sm" disabled={isFetchingAI}>
+                                            {isFetchingAI ? ( <Loader2 className="mr-2 h-4 w-4 animate-spin" /> ) : ( <Sparkles className="mr-2 h-4 w-4" /> )}
+                                            Auto-fill
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        <DropdownMenuItem onClick={() => handleAutofill(index, 'all')}>Fill All Fields</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleAutofill(index, 'blank')}>Fill Blank Fields</DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+
+                                <Button type="button" variant="destructive" size="sm" onClick={() => handleDeleteDrug(index)}>
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                </Button>
+                            </div>
+                        )}
+                      </div>
                     ))}
-                </Accordion>
+                </div>
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
                     <p>No drug highlights for this day.</p>
@@ -968,5 +964,7 @@ export default function PharmaFlashClient() {
       </>
     );
   }
+
+    
 
     
