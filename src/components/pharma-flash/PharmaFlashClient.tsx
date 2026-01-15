@@ -188,7 +188,7 @@ const getDisplayValue = (fieldData: any): string => {
 // Helper function to normalize incoming Firestore data
 const normalizeDrugHighlight = (data: any): DrugHighlight => {
     const normalized: DrugHighlight = { 
-      id: data?.id || new Date().getTime().toString(),
+      id: data?.id || data?.drugName || new Date().getTime().toString(), // Use drugName for old data's ID
       ...emptyDrugData 
     };
   
@@ -216,15 +216,27 @@ const normalizeDrugHighlight = (data: any): DrugHighlight => {
     return normalized;
 };
   
-
+// This function handles both old (single drug object) and new (daily highlight object) data structures.
 const normalizeDailyHighlight = (date: string, data: any): DailyHighlight => {
-    if (!data || !Array.isArray(data.drugs)) {
-        return getEmptyDailyHighlight(date);
+    // New format: data contains a 'drugs' array.
+    if (data && Array.isArray(data.drugs)) {
+        return {
+            date: data.date || date,
+            drugs: data.drugs.map(normalizeDrugHighlight),
+        };
     }
-    return {
-        date: data.date || date,
-        drugs: data.drugs.map(normalizeDrugHighlight),
-    };
+
+    // Old format: data is the drug object itself, and it has a drugName.
+    // This indicates a single-drug entry for that day.
+    if (data && typeof data.drugName === 'string') {
+        return {
+            date: date,
+            drugs: [normalizeDrugHighlight(data)], // Wrap the single drug in an array
+        };
+    }
+    
+    // If data is empty or in an unknown format, return an empty structure.
+    return getEmptyDailyHighlight(date);
 };
   
 
@@ -290,10 +302,9 @@ export default function PharmaFlashClient() {
         const newAllData = new Map<string, DrugHighlight[]>();
         const newDatesWithData = new Set<string>();
         querySnapshot.forEach((doc) => {
-            const data = doc.data() as { drugs: any[] };
-            if (data.drugs && data.drugs.length > 0) {
-              const normalizedDrugs = data.drugs.map(normalizeDrugHighlight);
-              newAllData.set(doc.id, normalizedDrugs);
+            const normalizedData = normalizeDailyHighlight(doc.id, doc.data());
+            if (normalizedData.drugs.length > 0) {
+              newAllData.set(doc.id, normalizedData.drugs);
               newDatesWithData.add(doc.id);
             }
         });
@@ -353,8 +364,15 @@ export default function PharmaFlashClient() {
       setIsSaving(true);
       const docRef = doc(firestore, 'drugHighlights', dateString);
       
-      // Ensure date field is correct
-      const finalData = { ...data, date: dateString };
+      // Ensure date field is correct and all drugs have a unique ID
+      const finalData = { 
+        ...data, 
+        date: dateString,
+        drugs: data.drugs.map(drug => ({
+            ...drug,
+            id: drug.id || new Date().getTime().toString() + Math.random(),
+        })),
+    };
   
       setDocumentNonBlocking(docRef, finalData, { merge: true });
   
@@ -950,3 +968,5 @@ export default function PharmaFlashClient() {
       </>
     );
   }
+
+    
