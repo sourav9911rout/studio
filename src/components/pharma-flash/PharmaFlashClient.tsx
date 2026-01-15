@@ -771,15 +771,17 @@ export default function PharmaFlashClient() {
                     <Skeleton className="h-24 w-full" />
                 </div>
               ) : fields.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {fields.map((field, index) => (
-                      <div key={field.id} className="border rounded-lg overflow-hidden flex flex-col">
-                        <div className="px-4 py-2 bg-secondary/50 flex justify-between items-center">
-                           <div className="flex items-center gap-2">
-                                <span className="font-semibold text-lg">{getValues(`drugs.${index}.drugName`) || `New Drug ${index + 1}`}</span>
-                           </div>
+                <Accordion type="multiple" defaultValue={fields.map(f => f.id)} className="w-full space-y-4">
+                  {fields.map((field, index) => (
+                    <AccordionItem value={field.id} key={field.id} className="border rounded-lg overflow-hidden">
+                      <AccordionTrigger className="px-4 py-2 bg-secondary/50 hover:no-underline">
+                        <div className="flex items-center gap-2">
+                          {isEditing && <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />}
+                          <span className="font-semibold text-lg">{getValues(`drugs.${index}.drugName`) || `New Drug ${index + 1}`}</span>
                         </div>
-                        <div className="p-4 space-y-4 flex-grow">
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="p-4 space-y-4">
                             {/* Drug Name */}
                             <div className="flex items-start gap-4">
                                 <label className="w-1/3 text-sm font-semibold pt-2 text-right">Drug of the Day</label>
@@ -851,7 +853,7 @@ export default function PharmaFlashClient() {
                         </div>
                         
                         {isEditing && (
-                            <div className="flex justify-end items-center gap-2 p-4 border-t mt-auto">
+                            <div className="flex justify-end items-center gap-2 p-4 border-t">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button type="button" variant="outline" size="sm" disabled={isFetchingAI}>
@@ -871,9 +873,10 @@ export default function PharmaFlashClient() {
                                 </Button>
                             </div>
                         )}
-                      </div>
-                    ))}
-                </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
                     <p>No drug highlights for this day.</p>
