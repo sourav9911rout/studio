@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -261,6 +261,7 @@ export default function PharmaFlashClient() {
     const [duplicateDrugInfo, setDuplicateDrugInfo] = useState<DuplicateDrugInfo | null>(null);
     const [isReferenceDialogOpen, setIsReferenceDialogOpen] = useState(false);
     const [activeDrugIndex, setActiveDrugIndex] = useState<number | null>(null);
+    const drugAccordionRefs = useRef<Map<string, HTMLElement | null>>(new Map());
   
     const { toast } = useToast();
     const firestore = useFirestore();
@@ -603,6 +604,11 @@ export default function PharmaFlashClient() {
         });
       };
     
+      const handleScrollToDrug = (drugId: string) => {
+        const element = drugAccordionRefs.current.get(drugId);
+        element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+      
     const renderField = (
         index: number,
         label: string,
@@ -789,6 +795,23 @@ export default function PharmaFlashClient() {
               )}
             </div>
           </div>
+
+          {!isLoading && fields.length > 1 && (
+            <div className="mb-4 flex flex-wrap gap-2 border-b pb-2">
+              <span className="text-sm font-semibold self-center">Go to:</span>
+              {fields.map((field, index) => (
+                <Button
+                  key={field.id}
+                  variant="link"
+                  size="sm"
+                  className="p-1 h-auto text-sm"
+                  onClick={() => handleScrollToDrug(field.id)}
+                >
+                  {getValues(`drugs.${index}.drugName`) || `Drug ${index + 1}`}
+                </Button>
+              ))}
+            </div>
+          )}
   
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSave)}>
@@ -801,7 +824,12 @@ export default function PharmaFlashClient() {
               ) : fields.length > 0 ? (
                 <Accordion type="multiple" defaultValue={fields.map(f => f.id)} className="w-full space-y-4">
                   {fields.map((field, index) => (
-                    <AccordionItem value={field.id} key={field.id} className="border rounded-lg overflow-hidden">
+                    <AccordionItem 
+                        value={field.id} 
+                        key={field.id} 
+                        className="border rounded-lg overflow-hidden"
+                        ref={(el) => drugAccordionRefs.current.set(field.id, el)}
+                    >
                       <AccordionTrigger className="px-4 py-2 bg-secondary/50 hover:no-underline">
                         <div className="flex items-center gap-2">
                           {isEditing && <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />}
@@ -999,4 +1027,5 @@ export default function PharmaFlashClient() {
     
 
     
+
 
