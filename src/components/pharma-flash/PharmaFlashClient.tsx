@@ -11,6 +11,7 @@ import {
   eachDayOfInterval,
   parse,
   startOfToday,
+  isValid,
 } from 'date-fns';
 import {
   doc,
@@ -84,7 +85,8 @@ import {
   Sparkles,
   BookText,
   PlusCircle,
-  GripVertical
+  GripVertical,
+  Link as LinkIcon,
 } from 'lucide-react';
 import {
   Carousel,
@@ -286,8 +288,23 @@ export default function PharmaFlashClient() {
     const watchedDrugs = watch('drugs');
     
     useEffect(() => {
-      setIsClient(true);
-    }, []);
+        setIsClient(true);
+        const params = new URLSearchParams(window.location.search);
+        const dateParam = params.get('date');
+        if (dateParam) {
+          const parsedDate = parse(dateParam, 'yyyy-MM-dd', new Date());
+          if (isValid(parsedDate)) {
+            setSelectedDate(parsedDate);
+          }
+        }
+      }, []);
+
+      useEffect(() => {
+        if (isClient) {
+          const newUrl = `${window.location.pathname}?date=${dateString}`;
+          window.history.pushState({ path: newUrl }, '', newUrl);
+        }
+      }, [dateString, isClient]);
   
     useEffect(() => {
       if (firestore && user === null && !isUserLoading) {
@@ -577,6 +594,14 @@ export default function PharmaFlashClient() {
       () => Array.from(datesWithData).map(parseDateString),
       [datesWithData]
     );
+
+    const handleCopyLink = () => {
+        navigator.clipboard.writeText(window.location.href);
+        toast({
+          title: 'Link Copied',
+          description: 'A shareable link has been copied to your clipboard.',
+        });
+      };
     
     const renderField = (
         index: number,
@@ -733,6 +758,9 @@ export default function PharmaFlashClient() {
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <CalendarIcon className="h-5 w-5 text-muted-foreground" />
               Highlights for {format(selectedDate, 'MMMM d, yyyy')}
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopyLink}>
+                <LinkIcon className="h-4 w-4" />
+              </Button>
             </h2>
             <div className="flex items-center gap-2">
               <Button
@@ -971,3 +999,4 @@ export default function PharmaFlashClient() {
     
 
     
+
