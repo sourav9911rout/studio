@@ -74,6 +74,7 @@ import DuplicateDrugDialog, {
   type DuplicateDrugInfo,
 } from './DuplicateDrugDialog';
 import ReferenceDialog from './ReferenceDialog';
+import NotifyStaffDialog from './NotifyStaffDialog';
 import {
   Pencil,
   Save,
@@ -87,6 +88,7 @@ import {
   PlusCircle,
   GripVertical,
   Link as LinkIcon,
+  Mail,
 } from 'lucide-react';
 import {
   Carousel,
@@ -262,6 +264,7 @@ export default function PharmaFlashClient() {
     const [isReferenceDialogOpen, setIsReferenceDialogOpen] = useState(false);
     const [activeDrugIndex, setActiveDrugIndex] = useState<number | null>(null);
     const drugAccordionRefs = useRef<Map<string, HTMLElement | null>>(new Map());
+    const [isNotifyStaffDialogOpen, setIsNotifyStaffDialogOpen] = useState(false);
   
     const { toast } = useToast();
     const firestore = useFirestore();
@@ -577,14 +580,12 @@ export default function PharmaFlashClient() {
       };
   
     const initialCarouselIndex = useMemo(() => {
-        if (!isClient) return datesForNavigation.length -1;
-        const today = startOfToday();
-        const formattedToday = format(today, 'yyyy-MM-dd');
+        if (!isClient) return datesForNavigation.length - 1; // Default for SSR
         const index = datesForNavigation.findIndex(
-          (d) => format(d, 'yyyy-MM-dd') === formattedToday
+          (d) => format(d, 'yyyy-MM-dd') === dateString
         );
         return index > -1 ? index : datesForNavigation.length - 1;
-      }, [datesForNavigation, isClient]);
+      }, [datesForNavigation, isClient, dateString]);
   
   
     const parseDateString = (dateStr: string): Date => {
@@ -769,6 +770,14 @@ export default function PharmaFlashClient() {
               </Button>
             </h2>
             <div className="flex items-center gap-2">
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsNotifyStaffDialogOpen(true)}
+                disabled={isLoading || !dailyData || dailyData.drugs.length === 0}
+              >
+                <Mail className="mr-2 h-4 w-4" /> Notify Staff
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -993,6 +1002,11 @@ export default function PharmaFlashClient() {
             }
             onSave={handleUpdateReferences}
         />
+        <NotifyStaffDialog
+          open={isNotifyStaffDialogOpen}
+          onOpenChange={setIsNotifyStaffDialogOpen}
+          dailyHighlight={dailyData}
+        />
         <AlertDialog open={isUnsavedChangesDialogOpen} onOpenChange={setIsUnsavedChangesDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -1027,5 +1041,6 @@ export default function PharmaFlashClient() {
     
 
     
+
 
 
