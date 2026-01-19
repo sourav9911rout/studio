@@ -84,7 +84,7 @@ function generateHighlightHTML(dailyHighlight: DailyHighlight): string {
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 700px; margin: auto; border: 1px solid #ddd; padding: 20px;">
         <h1 style="color: #16a085; text-align: center;">Daily Drug Highlight</h1>
         <p style="text-align: center; font-size: 1.2em; margin-bottom: 20px;">${formattedDate}</p>
-        <p>Dear Staff,</p>
+        <p>Respected Madam/Sir,</p>
         <p>Please find the drug highlight(s) for today:</p>
         <hr>
         ${drugsHTML}
