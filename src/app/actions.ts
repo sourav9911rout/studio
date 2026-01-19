@@ -14,7 +14,7 @@ async function sendEmail({ to, subject, html }: SendEmailOptions) {
   const { EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASS } = process.env;
 
   if (!EMAIL_HOST || !EMAIL_PORT || !EMAIL_USER || !EMAIL_PASS) {
-    throw new Error('Email environment variables are not configured. Please check your .env file.');
+    throw new Error('Email environment variables are not configured. Please ensure they are set correctly in your deployment environment.');
   }
 
   const transporter = nodemailer.createTransport({
@@ -119,6 +119,9 @@ export async function sendDailyHighlightEmail(
   } catch (error) {
     console.error('Failed to send email:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+    if (errorMessage.includes('Email environment variables are not configured')) {
+        return { success: false, message: 'Email service is not configured on the server. Please ensure the required environment variables are set in your deployment settings.' };
+    }
     return { success: false, message: `Failed to send email. ${errorMessage}` };
   }
 }
