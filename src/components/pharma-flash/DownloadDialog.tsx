@@ -20,13 +20,12 @@ import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { DailyHighlight, DrugHighlight, InfoWithReference } from "@/lib/types";
 import { Download, Loader2 } from "lucide-react";
-import { logoData } from "@/lib/logo";
 
 interface DownloadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   datesWithData: Set<string>;
-  allDrugData: Map<string, DrugHighlight[]>; // Changed from allDrugData
+  allDrugData: Map<string, DrugHighlight[]>;
 }
 
 // Helper to safely get the display value for a field
@@ -91,30 +90,19 @@ export default function DownloadDialog({
       }
 
       const doc = new jsPDF();
-      let startY;
+      let startY = 20;
 
-      if (logoData) {
-        try {
-          // Add logo at top-left. Position (15, 10), size (30x30).
-          // Note: The image format 'JPEG' might need to be changed to 'PNG' depending on your logo file.
-          doc.addImage(logoData, 'JPEG', 15, 10, 30, 30);
-        } catch (e) {
-          console.error("Error adding logo to PDF. The Base64 data might be corrupt.", e);
-        }
-      }
-      
-      // Center the main title.
+      // Main Title
       doc.setFontSize(20);
       doc.setFont("times", "bold");
-      doc.text("Department of Pharmacology", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+      doc.text("Department of Pharmacology", doc.internal.pageSize.getWidth() / 2, startY, { align: 'center' });
+      startY += 10;
       
-      // Subtitle below the main title.
+      // Subtitle
       doc.setFontSize(16);
       doc.setFont("times", "normal");
-      doc.text(`Drug Highlights from ${format(range.from, "MMMM d, yyyy")} to ${format(range.to, "MMMM d, yyyy")}`, doc.internal.pageSize.getWidth() / 2, 30, { align: 'center' });
-      
-      // Set starting Y position for the main content tables.
-      startY = logoData ? 50 : 40;
+      doc.text(`Drug Highlights from ${format(range.from, "MMMM d, yyyy")} to ${format(range.to, "MMMM d, yyyy")}`, doc.internal.pageSize.getWidth() / 2, startY, { align: 'center' });
+      startY += 20;
 
 
       highlightsToExport.forEach(dailyHighlight => {
@@ -129,8 +117,7 @@ export default function DownloadDialog({
         doc.text(`Highlights for: ${highlightDate}`, 14, startY);
         startY += 10;
 
-        dailyHighlight.drugs.forEach((highlight, index) => {
-
+        dailyHighlight.drugs.forEach((highlight) => {
             const offLabelUse = highlight.offLabelUse as InfoWithReference;
             let offLabelValue = offLabelUse.value || '';
             let offLabelRefs = offLabelUse.references || [];
@@ -170,22 +157,19 @@ export default function DownloadDialog({
                   font: "times",
                   fontSize: 12,
                   cellPadding: 3,
-                  overflow: 'linebreak', // Prevents text from overflowing
+                  overflow: 'linebreak',
                 },
                 columnStyles: {
                   0: { fontStyle: 'bold', cellWidth: 50 },
                   1: { cellWidth: 'auto' },
                 },
                 didDrawPage: (data) => {
-                    // Page numbers in footer
-                    const pageCount = doc.internal.getNumberOfPages();
-                    doc.setFontSize(10);
-                    doc.text(`Page ${data.pageNumber} of ${pageCount}`, doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
-                },
-                margin: { top: 30, bottom: 20 },
+                  const pageCount = (doc as any).internal.getNumberOfPages();
+                  doc.setFontSize(10);
+                  doc.text(`Page ${data.pageNumber} of ${pageCount}`, doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+                }
               });
-              // @ts-ignore
-              startY = doc.lastAutoTable.finalY + 15; // Add space after each drug's table
+              startY = (doc as any).lastAutoTable.finalY + 15;
         });
 
       });
