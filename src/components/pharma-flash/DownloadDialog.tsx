@@ -90,41 +90,30 @@ export default function DownloadDialog({
       }
 
       const doc = new jsPDF();
+      let startY = 35;
       
       doc.setFontSize(20);
       doc.setFont("times", "bold");
-      doc.text("Department of Pharmacology", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+      doc.text("Department of Pharmacology", doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
 
       doc.setFontSize(16);
       doc.setFont("times", "normal");
-      doc.text(`Drug Highlights from ${format(range.from, "MMMM d, yyyy")} to ${format(range.to, "MMMM d, yyyy")}`, doc.internal.pageSize.getWidth() / 2, 30, { align: 'center' });
+      doc.text(`Drug Highlights from ${format(range.from, "MMMM d, yyyy")} to ${format(range.to, "MMMM d, yyyy")}`, doc.internal.pageSize.getWidth() / 2, 25, { align: 'center' });
 
-      let isFirstPage = true;
 
       highlightsToExport.forEach(dailyHighlight => {
-        if (!isFirstPage) {
+        if (startY > doc.internal.pageSize.getHeight() - 40) {
           doc.addPage();
+          startY = 20;
         }
-        isFirstPage = false;
 
         const highlightDate = format(parseDateString(dailyHighlight.date), "MMMM d, yyyy");
         doc.setFontSize(14);
         doc.setFont("times", "bold");
-        doc.text(`Highlights for: ${highlightDate}`, 14, 20);
-
-        let startY = 30;
+        doc.text(`Highlights for: ${highlightDate}`, 14, startY);
+        startY += 10;
 
         dailyHighlight.drugs.forEach((highlight, index) => {
-            if (index > 0) {
-                // Add a separator between drugs on the same day
-                startY += 10;
-                if (startY > 270) { // Check if new page is needed
-                    doc.addPage();
-                    startY = 20;
-                }
-                doc.setDrawColor(180, 180, 180);
-                doc.line(14, startY - 5, doc.internal.pageSize.getWidth() - 14, startY - 5);
-            }
 
             const offLabelUse = highlight.offLabelUse as InfoWithReference;
             let offLabelValue = offLabelUse.value || '';
@@ -154,9 +143,9 @@ export default function DownloadDialog({
                 startY: startY,
                 head: [['Field', 'Information']],
                 body: tableData,
-                theme: 'grid',
+                theme: 'striped',
                 headStyles: {
-                  fillColor: [22, 160, 133], // A teal color
+                  fillColor: [22, 160, 133],
                   textColor: 255,
                   fontStyle: 'bold',
                   font: 'times',
@@ -165,20 +154,22 @@ export default function DownloadDialog({
                   font: "times",
                   fontSize: 12,
                   cellPadding: 3,
+                  overflow: 'linebreak', // Prevents text from overflowing
                 },
                 columnStyles: {
                   0: { fontStyle: 'bold', cellWidth: 50 },
                   1: { cellWidth: 'auto' },
                 },
-                alternateRowStyles: {
-                  fillColor: [240, 240, 240]
-                },
                 didDrawPage: (data) => {
-                    startY = data.cursor?.y ?? 30; // Update startY for next table
+                    // Page numbers in footer
+                    const pageCount = doc.internal.getNumberOfPages();
+                    doc.setFontSize(10);
+                    doc.text(`Page ${data.pageNumber} of ${pageCount}`, doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
                 },
+                margin: { top: 30, bottom: 20 },
               });
               // @ts-ignore
-              startY = doc.lastAutoTable.finalY;
+              startY = doc.lastAutoTable.finalY + 15; // Add space after each drug's table
         });
 
       });
