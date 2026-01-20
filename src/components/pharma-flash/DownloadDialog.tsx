@@ -20,6 +20,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { DailyHighlight, DrugHighlight, InfoWithReference } from "@/lib/types";
 import { Download, Loader2 } from "lucide-react";
+import { logoData } from "@/lib/logo";
 
 interface DownloadDialogProps {
   open: boolean;
@@ -90,15 +91,30 @@ export default function DownloadDialog({
       }
 
       const doc = new jsPDF();
-      let startY = 35;
+      let startY;
+
+      if (logoData) {
+        try {
+          // Add logo at top-left. Position (15, 10), size (30x30).
+          // Note: The image format 'JPEG' might need to be changed to 'PNG' depending on your logo file.
+          doc.addImage(logoData, 'JPEG', 15, 10, 30, 30);
+        } catch (e) {
+          console.error("Error adding logo to PDF. The Base64 data might be corrupt.", e);
+        }
+      }
       
+      // Center the main title.
       doc.setFontSize(20);
       doc.setFont("times", "bold");
-      doc.text("Department of Pharmacology", doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
-
+      doc.text("Department of Pharmacology", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+      
+      // Subtitle below the main title.
       doc.setFontSize(16);
       doc.setFont("times", "normal");
-      doc.text(`Drug Highlights from ${format(range.from, "MMMM d, yyyy")} to ${format(range.to, "MMMM d, yyyy")}`, doc.internal.pageSize.getWidth() / 2, 25, { align: 'center' });
+      doc.text(`Drug Highlights from ${format(range.from, "MMMM d, yyyy")} to ${format(range.to, "MMMM d, yyyy")}`, doc.internal.pageSize.getWidth() / 2, 30, { align: 'center' });
+      
+      // Set starting Y position for the main content tables.
+      startY = logoData ? 50 : 40;
 
 
       highlightsToExport.forEach(dailyHighlight => {
