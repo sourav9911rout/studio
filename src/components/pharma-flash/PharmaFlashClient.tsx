@@ -823,7 +823,7 @@ export default function PharmaFlashClient() {
           )}
   
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSave)}>
+            <form onSubmit={form.handleSubmit(handleSave)} suppressHydrationWarning>
               {isLoading ? (
                 <div className="space-y-4">
                     <Skeleton className="h-12 w-full" />
@@ -1041,6 +1041,7 @@ export default function PharmaFlashClient() {
     
 
     
+
 
 
 
