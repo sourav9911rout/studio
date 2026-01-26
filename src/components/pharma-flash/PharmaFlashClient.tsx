@@ -89,7 +89,6 @@ import {
   GripVertical,
   Link as LinkIcon,
   Mail,
-  GalleryVertical,
 } from 'lucide-react';
 import {
   Carousel,
@@ -109,7 +108,6 @@ import { cn } from '@/lib/utils';
 import { Textarea } from '../ui/textarea';
 import { ThemeToggle } from '../ThemeToggle';
 import { getDrugInfo, GetDrugInfoOutput } from '@/ai/flows/drug-info-flow';
-import { generateInfographic } from '@/ai/flows/generate-infographic-flow';
 
 const offLabelUseSchema = z.object({
   value: z.string(),
@@ -267,10 +265,6 @@ export default function PharmaFlashClient() {
     const [activeDrugIndex, setActiveDrugIndex] = useState<number | null>(null);
     const drugAccordionRefs = useRef<Map<string, HTMLElement | null>>(new Map());
     const [isNotifyStaffDialogOpen, setIsNotifyStaffDialogOpen] = useState(false);
-    const [isGeneratingInfographic, setIsGeneratingInfographic] = useState(false);
-    const [infographicImageUrl, setInfographicImageUrl] = useState<string | null>(null);
-    const [isInfographicDialogOpen, setIsInfographicDialogOpen] = useState(false);
-    const [activeDrugForInfographic, setActiveDrugForInfographic] = useState<DrugHighlight | null>(null);
   
     const { toast } = useToast();
     const firestore = useFirestore();
@@ -585,50 +579,6 @@ export default function PharmaFlashClient() {
         setActiveDrugIndex(null);
       };
 
-    const handleGenerateInfographic = async (index: number) => {
-        const drugData = getValues(`drugs.${index}`);
-        if (!drugData || !drugData.drugName) {
-            toast({
-                variant: 'destructive',
-                title: 'Drug Name Required',
-                description: 'Please provide a drug name before generating an infographic.',
-            });
-            return;
-        }
-    
-        setIsGeneratingInfographic(true);
-        setInfographicImageUrl(null);
-        setActiveDrugForInfographic(drugData);
-        setIsInfographicDialogOpen(true);
-    
-        try {
-            const result = await generateInfographic({
-                drugName: drugData.drugName,
-                drugClass: drugData.drugClass,
-                mechanism: drugData.mechanism,
-                uses: drugData.uses,
-                sideEffects: drugData.sideEffects,
-            });
-            setInfographicImageUrl(result.imageUrl);
-        } catch (error: any) {
-            console.error('Failed to generate infographic:', error);
-            let description = 'Could not create the infographic. Please try again.';
-            if (error.message && error.message.includes('billed users')) {
-                description = 'This feature requires a billing-enabled Google Cloud project. Please set up billing in your Google Cloud account to use this feature.';
-            }
-
-            toast({
-                variant: 'destructive',
-                title: 'Infographic Generation Failed',
-                description,
-            });
-            // Close the dialog on failure
-            setIsInfographicDialogOpen(false);
-        } finally {
-            setIsGeneratingInfographic(false);
-        }
-    };
-  
     const initialCarouselIndex = useMemo(() => {
         if (!isClient) return datesForNavigation.length - 1; // Default for SSR
         const index = datesForNavigation.findIndex(
@@ -967,22 +917,7 @@ export default function PharmaFlashClient() {
                             </div>
                         </div>
                         
-                        <div className="p-4 border-t flex items-center justify-between">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleGenerateInfographic(index)}
-                                disabled={(isGeneratingInfographic && activeDrugForInfographic?.id === field.id) || !getValues(`drugs.${index}.drugName`)}
-                            >
-                                {isGeneratingInfographic && activeDrugForInfographic?.id === field.id ? (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                ) : (
-                                    <GalleryVertical className="mr-2 h-4 w-4" />
-                                )}
-                                Generate Infographic
-                            </Button>
-
+                        <div className="p-4 border-t flex items-center justify-end">
                             {isEditing && (
                                 <div className="flex items-center gap-2">
                                     <DropdownMenu>
@@ -1101,37 +1036,6 @@ export default function PharmaFlashClient() {
             onGoWithNew={handleGoWithNew}
           />
         )}
-        <Dialog open={isInfographicDialogOpen} onOpenChange={setIsInfographicDialogOpen}>
-            <DialogContent className="max-w-lg">
-                <DialogHeader>
-                    <DialogTitle>
-                        Infographic for {activeDrugForInfographic?.drugName}
-                    </DialogTitle>
-                    <DialogDescription>
-                        AI-generated visual summary. This may take a moment to generate.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="flex justify-center items-center p-4 min-h-[400px]">
-                    {isGeneratingInfographic && (
-                        <div className="flex flex-col items-center gap-4">
-                            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                            <p className="text-muted-foreground">Generating your infographic...</p>
-                        </div>
-                    )}
-                    {infographicImageUrl && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                            src={infographicImageUrl}
-                            alt={`Infographic for ${activeDrugForInfographic?.drugName}`}
-                            className="rounded-lg max-w-full h-auto"
-                        />
-                    )}
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsInfographicDialogOpen(false)}>Close</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
       </>
     );
   }
@@ -1139,6 +1043,7 @@ export default function PharmaFlashClient() {
     
 
     
+
 
 
 
