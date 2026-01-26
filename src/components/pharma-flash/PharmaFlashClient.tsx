@@ -610,12 +610,17 @@ export default function PharmaFlashClient() {
                 sideEffects: drugData.sideEffects,
             });
             setInfographicImageUrl(result.imageUrl);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to generate infographic:', error);
+            let description = 'Could not create the infographic. Please try again.';
+            if (error.message && error.message.includes('billed users')) {
+                description = 'This feature requires a billing-enabled Google Cloud project. Please set up billing in your Google Cloud account to use this feature.';
+            }
+
             toast({
                 variant: 'destructive',
                 title: 'Infographic Generation Failed',
-                description: 'Could not create the infographic. Please try again.',
+                description,
             });
             // Close the dialog on failure
             setIsInfographicDialogOpen(false);
@@ -1134,6 +1139,7 @@ export default function PharmaFlashClient() {
     
 
     
+
 
 
 
