@@ -10,7 +10,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { DrugHighlight } from '@/lib/types';
 
 // We can pass the whole drug object to the flow
 const GenerateInfographicInputSchema = z.object({
@@ -77,11 +76,16 @@ const generateInfographicFlow = ai.defineFlow(
       return { imageUrl: media.url };
 
     } catch (error: any) {
-        if (error.message && error.message.includes('Imagen API is only accessible to billed users')) {
-            throw new Error('Billing Required: The AI model for generating infographics (Imagen) requires a billing account to be enabled on your Google Cloud project. Please enable billing to use this feature.');
+        if (error.message) {
+            if (error.message.includes('API key not valid')) {
+                throw new Error('Invalid API Key: The provided GEMINI_API_KEY is not valid. Please check the key in your .env file or deployment settings.');
+            }
+            if (error.message.includes('Imagen API is only accessible to billed users')) {
+                throw new Error('Billing Required: The Imagen model requires a billing account on your Google Cloud project. The API key you provided is likely for a text model (like Gemini Pro) and cannot bypass this requirement for the image model. Please enable billing on your project to generate infographics.');
+            }
         }
         console.error("Error in generateInfographicFlow:", error);
-        throw new Error('Failed to generate infographic due to an unexpected error.');
+        throw new Error('Failed to generate infographic due to an unexpected error. Please check the server logs.');
     }
   }
 );
