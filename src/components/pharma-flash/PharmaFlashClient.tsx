@@ -525,13 +525,16 @@ export default function PharmaFlashClient() {
             console.error('Error fetching data from AI:', error);
             
             let errorMessage = 'Could not fetch drug information. Please check your API key.';
-            const msg = error.message?.toLowerCase() || '';
+            const msg = error.message || '';
 
-            if (msg.includes('leaked')) {
-              errorMessage = 'The API key being used was reported as leaked or is invalid. Please ensure it is correct and try again.';
-              setAiError(errorMessage);
-            } else if (msg.includes('high demand') || msg.includes('503')) {
-              errorMessage = 'The AI service is temporarily overloaded. Please wait a moment and try again.';
+            if (msg.includes('SYSTEM_KEY_LEAKED')) {
+                errorMessage = 'The system API key is currently flagging as exposed. Please provide your own Gemini API key using the Key icon in the top-right corner.';
+                setAiError(errorMessage);
+            } else if (msg.includes('PERSONAL_KEY_LEAKED')) {
+                errorMessage = 'The personal API key you provided has been flagged as leaked. Please generate a NEW key at Google AI Studio and replace it.';
+                setAiError(errorMessage);
+            } else if (msg.toLowerCase().includes('high demand') || msg.includes('503')) {
+                errorMessage = 'The AI service is temporarily overloaded. Please wait 30 seconds and try again.';
             }
 
             toast({
@@ -927,7 +930,7 @@ export default function PharmaFlashClient() {
               <AlertCircle className="h-5 w-5" />
               <AlertTitle className="font-bold">AI Service Notice</AlertTitle>
               <AlertDescription className="text-sm">
-                {aiError} { !userApiKey && "To continue using AI features, please provide your own Gemini API key via the Key icon in the top right corner." }
+                {aiError}
               </AlertDescription>
             </Alert>
           )}

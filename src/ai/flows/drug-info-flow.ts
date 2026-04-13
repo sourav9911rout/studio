@@ -62,17 +62,17 @@ Return only the requested information as a JSON object with the specified keys. 
 - Fun Fact`;
 
 export async function getDrugInfo(input: GetDrugInfoInput): Promise<GetDrugInfoOutput> {
+  const apiKeyToUse = input.userApiKey?.trim();
+
   // If a user API key is provided, we use a local Genkit instance to prioritize it.
-  if (input.userApiKey && input.userApiKey.trim() !== '') {
+  if (apiKeyToUse && apiKeyToUse !== '') {
     try {
-      // Create a fresh plugin instance with the user's key
-      const plugin = googleAI({ apiKey: input.userApiKey.trim() });
+      const plugin = googleAI({ apiKey: apiKeyToUse });
       const localAi = genkit({
         plugins: [plugin],
       });
 
       const response = await localAi.generate({
-        // Use the string identifier to ensure the localAi instance (with the custom key) uses its registered plugin.
         model: 'googleai/gemini-2.5-flash',
         system: SYSTEM_PROMPT,
         prompt: `Provide details for the drug: ${input.drugName}`,
@@ -86,9 +86,11 @@ export async function getDrugInfo(input: GetDrugInfoInput): Promise<GetDrugInfoO
     } catch (error: any) {
       console.error('Error in local AI generation:', error);
       const msg = error.message?.toLowerCase() || '';
-      if (msg.includes('leaked')) {
-        throw new Error('The provided personal API key was reported as leaked or is invalid. Please generate a fresh key at Google AI Studio.');
+      
+      if (msg.includes('leaked') || msg.includes('exposed')) {
+        throw new Error('PERSONAL_KEY_LEAKED: The personal API key you provided has been flagged as leaked by Google. Please generate a fresh key at Google AI Studio.');
       }
+      
       if (msg.includes('high demand') || msg.includes('503') || msg.includes('unavailable')) {
         throw new Error('The AI model is currently experiencing high demand. Please try again in about 30 seconds.');
       }
@@ -96,8 +98,16 @@ export async function getDrugInfo(input: GetDrugInfoInput): Promise<GetDrugInfoO
     }
   }
 
-  // Otherwise use the default registered flow
-  return getDrugInfoFlow(input);
+  // Otherwise use the default registered flow (which uses the system environment key)
+  try {
+    return await getDrugInfoFlow(input);
+  } catch (error: any) {
+    const msg = error.message?.toLowerCase() || '';
+    if (msg.includes('leaked') || msg.includes('exposed')) {
+      throw new Error('SYSTEM_KEY_LEAKED: The system API key is currently flagged as exposed. To continue using AI features, please provide your own API key in the settings tab (Key icon).');
+    }
+    throw error;
+  }
 }
 
 const prompt = ai.definePrompt({
