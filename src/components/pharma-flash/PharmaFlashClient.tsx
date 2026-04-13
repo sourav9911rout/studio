@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -505,7 +506,7 @@ export default function PharmaFlashClient() {
             let errorMessage = 'Could not fetch drug information. Please try again.';
             
             if (error.message?.toLowerCase().includes('leaked')) {
-              errorMessage = 'Your Gemini API key was reported as leaked and has been disabled by Google. Please generate a new key at aistudio.google.com and update your environment variables.';
+              errorMessage = 'Your Gemini API key was reported as leaked. Please generate a new key at aistudio.google.com and update it privately.';
             } else if (error.message?.includes('403') || error.message?.includes('401')) {
               errorMessage = 'AI service permission error. Please check your API key and project billing status.';
             }
