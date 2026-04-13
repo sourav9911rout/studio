@@ -82,6 +82,7 @@ import {
   AlertCircle,
   Settings,
   Key,
+  ExternalLink,
 } from 'lucide-react';
 import {
   Carousel,
@@ -704,9 +705,20 @@ export default function PharmaFlashClient() {
                                 <Key className="h-4 w-4 text-primary" />
                                 <h4 className="font-bold font-headline text-lg">AI Settings</h4>
                             </div>
-                            <p className="text-xs text-muted-foreground leading-relaxed">
-                                Enter your personal Gemini API key to bypass global rate limits. This key is stored locally in your browser.
-                            </p>
+                            <div className="space-y-3">
+                              <p className="text-xs text-muted-foreground leading-relaxed">
+                                  Enter your personal Gemini API key to bypass global rate limits. This key is stored locally in your browser.
+                              </p>
+                              <a 
+                                href="https://aistudio.google.com/app/apikey" 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline group"
+                              >
+                                Get a free key at Google AI Studio
+                                <ExternalLink className="h-3 w-3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                              </a>
+                            </div>
                             <div className="space-y-2">
                                 <Label htmlFor="api-key" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">API Key</Label>
                                 <Input 
@@ -1151,4 +1163,3 @@ export default function PharmaFlashClient() {
       </>
     );
 }
-
