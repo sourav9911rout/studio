@@ -8,11 +8,13 @@
  * - GetDrugInfoOutput - The return type for the getDrugInfo function.
  */
 
-import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { ai, z } from '@/ai/genkit';
+import { googleAI } from '@genkit-ai/google-genai';
+import { genkit } from 'genkit';
 
 const GetDrugInfoInputSchema = z.object({
   drugName: z.string().describe('The name of the drug to look up.'),
+  userApiKey: z.string().optional().describe('An optional user-provided API key to bypass environment limits.'),
 });
 export type GetDrugInfoInput = z.infer<typeof GetDrugInfoInputSchema>;
 
@@ -37,15 +39,7 @@ const GetDrugInfoOutputSchema = z.object({
 });
 export type GetDrugInfoOutput = z.infer<typeof GetDrugInfoOutputSchema>;
 
-export async function getDrugInfo(input: GetDrugInfoInput): Promise<GetDrugInfoOutput> {
-  return getDrugInfoFlow(input);
-}
-
-const prompt = ai.definePrompt({
-  name: 'getDrugInfoPrompt',
-  input: { schema: GetDrugInfoInputSchema },
-  output: { schema: GetDrugInfoOutputSchema },
-  prompt: `You are an expert pharmacologist. Provide accurate and concise information for the drug named "{{drugName}}".
+const SYSTEM_PROMPT = `You are an expert pharmacologist. Provide accurate and concise information for the requested drug.
 
 For the 'offLabelUse' field, provide the text description in the 'value' property and a list of source URLs in the 'references' property.
 For all other fields, provide a simple string value.
@@ -65,7 +59,38 @@ Return only the requested information as a JSON object with the specified keys. 
 - Clinical uses
 - Contraindication
 - Off Label Use (with value and references)
-- Fun Fact`,
+- Fun Fact`;
+
+export async function getDrugInfo(input: GetDrugInfoInput): Promise<GetDrugInfoOutput> {
+  // If a user API key is provided, we use a local Genkit instance to bypass global key limits/leaks
+  if (input.userApiKey) {
+    const localAi = genkit({
+      plugins: [googleAI({ apiKey: input.userApiKey })],
+      model: 'googleai/gemini-2.5-flash',
+    });
+
+    const response = await localAi.generate({
+      system: SYSTEM_PROMPT,
+      prompt: `Provide details for the drug: ${input.drugName}`,
+      output: { schema: GetDrugInfoOutputSchema },
+    });
+
+    if (!response.output) {
+      throw new Error('Failed to get drug information using the provided API key.');
+    }
+    return response.output;
+  }
+
+  // Otherwise use the default registered flow
+  return getDrugInfoFlow(input);
+}
+
+const prompt = ai.definePrompt({
+  name: 'getDrugInfoPrompt',
+  input: { schema: GetDrugInfoInputSchema },
+  output: { schema: GetDrugInfoOutputSchema },
+  system: SYSTEM_PROMPT,
+  prompt: `Provide details for the drug: {{drugName}}`,
 });
 
 const getDrugInfoFlow = ai.defineFlow(

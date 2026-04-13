@@ -80,6 +80,8 @@ import {
   Link as LinkIcon,
   Mail,
   AlertCircle,
+  Settings,
+  Key,
 } from 'lucide-react';
 import {
   Carousel,
@@ -100,6 +102,7 @@ import { Textarea } from '../ui/textarea';
 import { ThemeToggle } from '../ThemeToggle';
 import { getDrugInfo, GetDrugInfoOutput } from '@/ai/flows/drug-info-flow';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { Label } from '../ui/label';
 
 const offLabelUseSchema = z.object({
   value: z.string(),
@@ -249,6 +252,9 @@ export default function PharmaFlashClient() {
     const [activeDrugIndex, setActiveDrugIndex] = useState<number | null>(null);
     const drugAccordionRefs = useRef<Map<string, HTMLElement | null>>(new Map());
     const [isNotifyStaffDialogOpen, setIsNotifyStaffDialogOpen] = useState(false);
+    
+    const [userApiKey, setUserApiKey] = useState<string>('');
+    const [localKeyInput, setLocalKeyInput] = useState<string>('');
 
   
     const { toast } = useToast();
@@ -278,6 +284,13 @@ export default function PharmaFlashClient() {
     
     useEffect(() => {
         setIsClient(true);
+        // Load API key from local storage
+        const storedKey = localStorage.getItem('PHARMA_GEMINI_KEY');
+        if (storedKey) {
+            setUserApiKey(storedKey);
+            setLocalKeyInput(storedKey);
+        }
+
         const params = new URLSearchParams(window.location.search);
         const dateParam = params.get('date');
         if (dateParam) {
@@ -478,7 +491,7 @@ export default function PharmaFlashClient() {
           setIsFetchingAI(true);
           setAiError(null);
           try {
-            const result = await getDrugInfo({ drugName: drugNameValue });
+            const result = await getDrugInfo({ drugName: drugNameValue, userApiKey });
             const options = { shouldDirty: true };
       
             if (mode === 'all') {
@@ -605,6 +618,16 @@ export default function PharmaFlashClient() {
         const element = drugAccordionRefs.current.get(drugId);
         element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       };
+
+    const handleSaveLocalKey = () => {
+        localStorage.setItem('PHARMA_GEMINI_KEY', localKeyInput);
+        setUserApiKey(localKeyInput);
+        setAiError(null);
+        toast({
+            title: 'API Key Saved',
+            description: 'Your personal Gemini API key will now be used for AI features.',
+        });
+    };
       
     const renderField = (
         index: number,
@@ -667,7 +690,41 @@ export default function PharmaFlashClient() {
           <p className="text-center text-lg mt-3 font-headline text-muted-foreground">
             भेषजगुण विज्ञान विभाग
           </p>
-          <div className="absolute top-6 right-6">
+          <div className="absolute top-6 right-6 flex items-center gap-2">
+            {isEditing && (
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline" size="icon" className="rounded-full shadow-sm hover:bg-accent/50">
+                            <Key className="h-4 w-4" />
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 p-6 rounded-3xl" align="end">
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Key className="h-4 w-4 text-primary" />
+                                <h4 className="font-bold font-headline text-lg">AI Settings</h4>
+                            </div>
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                                Enter your personal Gemini API key to bypass global rate limits. This key is stored locally in your browser.
+                            </p>
+                            <div className="space-y-2">
+                                <Label htmlFor="api-key" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">API Key</Label>
+                                <Input 
+                                    id="api-key"
+                                    type="password" 
+                                    placeholder="Enter Gemini API Key..." 
+                                    className="rounded-xl font-body text-sm"
+                                    value={localKeyInput}
+                                    onChange={(e) => setLocalKeyInput(e.target.value)}
+                                />
+                            </div>
+                            <Button className="w-full rounded-xl font-bold" onClick={handleSaveLocalKey}>
+                                Save Locally
+                            </Button>
+                        </div>
+                    </PopoverContent>
+                </Popover>
+            )}
             <ThemeToggle />
           </div>
         </div>
@@ -726,7 +783,7 @@ export default function PharmaFlashClient() {
                         isSelected ? "opacity-100 translate-y-0" : "opacity-70 group-hover:opacity-100"
                       )}>
                         <p className={cn(
-                          "text-[10px] leading-tight font-black line-clamp-2 uppercase tracking-tight",
+                          "text-[9px] leading-tight font-black line-clamp-3 uppercase tracking-tight",
                           isSelected ? "text-primary-foreground" : "text-primary"
                         )}>
                           {dayDrugData?.map(d => d.drugName).join(', ') || (hasData ? 'Highlights' : '')}
@@ -834,7 +891,7 @@ export default function PharmaFlashClient() {
               <AlertCircle className="h-5 w-5" />
               <AlertTitle className="font-bold">AI Service Disabled</AlertTitle>
               <AlertDescription className="text-sm">
-                {aiError}
+                {aiError} { !userApiKey && "Consider adding your own API key via the settings icon in the top right corner." }
               </AlertDescription>
             </Alert>
           )}
@@ -1094,3 +1151,4 @@ export default function PharmaFlashClient() {
       </>
     );
 }
+
