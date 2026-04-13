@@ -72,7 +72,8 @@ export async function getDrugInfo(input: GetDrugInfoInput): Promise<GetDrugInfoO
       });
 
       const response = await localAi.generate({
-        model: plugin.model('gemini-2.5-flash'),
+        // Use the string identifier to ensure the localAi instance (with the custom key) uses its registered plugin.
+        model: 'googleai/gemini-2.5-flash',
         system: SYSTEM_PROMPT,
         prompt: `Provide details for the drug: ${input.drugName}`,
         output: { schema: GetDrugInfoOutputSchema },
