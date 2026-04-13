@@ -80,7 +80,6 @@ import {
   Link as LinkIcon,
   Mail,
   AlertCircle,
-  Settings,
   Key,
   ExternalLink,
 } from 'lucide-react';
@@ -527,10 +526,10 @@ export default function PharmaFlashClient() {
             let errorMessage = 'Could not fetch drug information. Please try again.';
             
             if (error.message?.toLowerCase().includes('leaked')) {
-              errorMessage = 'Your Gemini API key was reported as leaked and has been disabled by Google. Please generate a NEW key at aistudio.google.com and update it in your project settings.';
+              errorMessage = 'Your Gemini API key was reported as leaked and has been disabled by Google. Please generate a NEW key at aistudio.google.com and update it in your settings.';
               setAiError(errorMessage);
             } else if (error.message?.includes('403') || error.message?.includes('401')) {
-              errorMessage = 'AI service permission error. Please check your API key and project billing status.';
+              errorMessage = 'AI service permission error. Please check your API key and project status.';
             }
 
             toast({
@@ -623,7 +622,7 @@ export default function PharmaFlashClient() {
     const handleSaveLocalKey = () => {
         localStorage.setItem('PHARMA_GEMINI_KEY', localKeyInput);
         setUserApiKey(localKeyInput);
-        setAiError(null);
+        setAiError(null); // Clear the error banner when a new key is saved
         toast({
             title: 'API Key Saved',
             description: 'Your personal Gemini API key will now be used for AI features.',
@@ -901,9 +900,9 @@ export default function PharmaFlashClient() {
           {aiError && isEditing && (
             <Alert variant="destructive" className="mb-6 rounded-2xl bg-destructive/5 border-destructive/20">
               <AlertCircle className="h-5 w-5" />
-              <AlertTitle className="font-bold">AI Service Disabled</AlertTitle>
+              <AlertTitle className="font-bold">AI Service Limitation</AlertTitle>
               <AlertDescription className="text-sm">
-                {aiError} { !userApiKey && "Consider adding your own API key via the settings icon in the top right corner." }
+                {aiError} { !userApiKey && "To continue using AI features, please provide your own Gemini API key via the Key icon in the top right corner." }
               </AlertDescription>
             </Alert>
           )}
