@@ -526,9 +526,13 @@ export default function PharmaFlashClient() {
             console.error('Error fetching data from AI:', error);
             
             let errorMessage = 'Could not fetch drug information. Please check your API key.';
-            
-            if (error.message?.toLowerCase().includes('leaked')) {
+            const msg = error.message?.toLowerCase() || '';
+
+            if (msg.includes('leaked')) {
               errorMessage = 'The API key being used was reported as leaked or is invalid. If you just added a personal key, please ensure it is correct and try refreshing the page.';
+              setAiError(errorMessage);
+            } else if (msg.includes('high demand') || msg.includes('503')) {
+              errorMessage = 'The AI service is temporarily overloaded (High Demand). Please wait a moment and try again.';
               setAiError(errorMessage);
             }
 
@@ -692,7 +696,7 @@ export default function PharmaFlashClient() {
           <p className="text-center text-xl font-headline text-primary/80 mt-2 font-bold italic">
             An initiative of Department of Pharmacology, AIIMS-CAPFIMS
           </p>
-          <p className="text-center text-2xl mt-3 font-headline font-bold text-primary">
+          <p className="text-center text-3xl mt-3 font-headline font-bold text-primary">
             <b>भेषजगुण विज्ञान विभाग</b>
           </p>
           <div className="absolute top-6 right-6 flex items-center gap-2">
@@ -923,9 +927,9 @@ export default function PharmaFlashClient() {
           {aiError && isEditing && (
             <Alert variant="destructive" className="mb-6 rounded-2xl bg-destructive/5 border-destructive/20">
               <AlertCircle className="h-5 w-5" />
-              <AlertTitle className="font-bold">AI Service Limitation</AlertTitle>
+              <AlertTitle className="font-bold">AI Service Notice</AlertTitle>
               <AlertDescription className="text-sm">
-                {aiError} { !userApiKey && "To continue using AI features, please provide your own Gemini API key via the Key icon in the top right corner." }
+                {aiError} { !userApiKey && !aiError.toLowerCase().includes('demand') && "To continue using AI features, please provide your own Gemini API key via the Key icon in the top right corner." }
               </AlertDescription>
             </Alert>
           )}

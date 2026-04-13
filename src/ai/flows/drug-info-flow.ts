@@ -85,8 +85,12 @@ export async function getDrugInfo(input: GetDrugInfoInput): Promise<GetDrugInfoO
       return response.output;
     } catch (error: any) {
       console.error('Error in local AI generation:', error);
-      if (error.message?.toLowerCase().includes('leaked')) {
+      const msg = error.message?.toLowerCase() || '';
+      if (msg.includes('leaked')) {
         throw new Error('The provided personal API key was reported as leaked or is invalid. Please generate a fresh key at Google AI Studio.');
+      }
+      if (msg.includes('high demand') || msg.includes('503') || msg.includes('unavailable')) {
+        throw new Error('The AI model is currently experiencing high demand (503 Service Unavailable). Please wait 30 seconds and try again.');
       }
       throw error;
     }
@@ -111,10 +115,18 @@ const getDrugInfoFlow = ai.defineFlow(
     outputSchema: GetDrugInfoOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    if (!output) {
-      throw new Error('Failed to get drug information from AI.');
+    try {
+      const { output } = await prompt(input);
+      if (!output) {
+        throw new Error('Failed to get drug information from AI.');
+      }
+      return output;
+    } catch (error: any) {
+      const msg = error.message?.toLowerCase() || '';
+      if (msg.includes('high demand') || msg.includes('503') || msg.includes('unavailable')) {
+        throw new Error('The AI model is currently experiencing high demand. Please try again in a moment.');
+      }
+      throw error;
     }
-    return output;
   }
 );
