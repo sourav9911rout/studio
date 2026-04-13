@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -43,17 +42,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-  } from "@/components/ui/dialog";
 import {
   Popover,
   PopoverContent,
@@ -108,8 +97,6 @@ import { cn } from '@/lib/utils';
 import { Textarea } from '../ui/textarea';
 import { ThemeToggle } from '../ThemeToggle';
 import { getDrugInfo, GetDrugInfoOutput } from '@/ai/flows/drug-info-flow';
-import InfographicDialog from './InfographicDialog';
-
 
 const offLabelUseSchema = z.object({
   value: z.string(),
@@ -180,7 +167,6 @@ const getEmptyDailyHighlight = (date: string): DailyHighlight => ({
     drugs: [],
 });
 
-// Helper to safely get the display value for a field, whether it's a string or an object
 const getDisplayValue = (fieldData: any): string => {
     if (typeof fieldData === 'string') {
       return fieldData;
@@ -191,14 +177,12 @@ const getDisplayValue = (fieldData: any): string => {
     return '';
   };
   
-// Helper function to normalize incoming Firestore data
 const normalizeDrugHighlight = (data: any): DrugHighlight => {
     const normalized: DrugHighlight = { 
-      id: data?.id || data?.drugName || new Date().getTime().toString(), // Use drugName for old data's ID
+      id: data?.id || data?.drugName || new Date().getTime().toString(), 
       ...emptyDrugData 
     };
   
-    // Handle simple string fields
     Object.keys(emptyDrugData).forEach(keyStr => {
       const key = keyStr as keyof Omit<DrugHighlight, 'id'>;
       if (key !== 'offLabelUse') {
@@ -206,7 +190,6 @@ const normalizeDrugHighlight = (data: any): DrugHighlight => {
       }
     });
   
-    // Handle the potentially complex offLabelUse field
     const offLabelData = data?.offLabelUse;
     if (typeof offLabelData === 'string') {
       normalized.offLabelUse = { value: offLabelData, references: [] };
@@ -222,9 +205,7 @@ const normalizeDrugHighlight = (data: any): DrugHighlight => {
     return normalized;
 };
   
-// This function handles both old (single drug object) and new (daily highlight object) data structures.
 const normalizeDailyHighlight = (date: string, data: any): DailyHighlight => {
-    // New format: data contains a 'drugs' array.
     if (data && Array.isArray(data.drugs)) {
         return {
             date: data.date || date,
@@ -232,16 +213,13 @@ const normalizeDailyHighlight = (date: string, data: any): DailyHighlight => {
         };
     }
 
-    // Old format: data is the drug object itself, and it has a drugName.
-    // This indicates a single-drug entry for that day.
     if (data && typeof data.drugName === 'string') {
         return {
             date: date,
-            drugs: [normalizeDrugHighlight(data)], // Wrap the single drug in an array
+            drugs: [normalizeDrugHighlight(data)], 
         };
     }
     
-    // If data is empty or in an unknown format, return an empty structure.
     return getEmptyDailyHighlight(date);
 };
   
@@ -279,7 +257,7 @@ export default function PharmaFlashClient() {
         defaultValues: getEmptyDailyHighlight(format(selectedDate, 'yyyy-MM-dd')),
     });
   
-    const { fields, append, remove, update } = useFieldArray({
+    const { fields, append, remove } = useFieldArray({
         control: form.control,
         name: "drugs",
         keyName: "fieldId",
@@ -388,7 +366,6 @@ export default function PharmaFlashClient() {
       setIsSaving(true);
       const docRef = doc(firestore, 'drugHighlights', dateString);
       
-      // Ensure date field is correct and all drugs have a unique ID
       const finalData = { 
         ...data, 
         date: dateString,
@@ -400,7 +377,6 @@ export default function PharmaFlashClient() {
   
       setDocumentNonBlocking(docRef, finalData, { merge: true });
   
-      // Optimistically update UI
       setDailyData(finalData);
       setAllDrugData(prev => new Map(prev).set(dateString, finalData.drugs));
       if (finalData.drugs.length > 0) {
@@ -414,7 +390,7 @@ export default function PharmaFlashClient() {
       }
       setIsEditing(false);
       setIsSaving(false);
-      reset(finalData); // Reset form to mark it as not dirty
+      reset(finalData);
   
       toast({
         title: 'Success',
@@ -429,7 +405,7 @@ export default function PharmaFlashClient() {
   
     const handleAddNewDrug = () => {
         const newDrug: DrugHighlight = {
-            id: new Date().getTime().toString(), // Simple unique ID
+            id: new Date().getTime().toString(), 
             ...emptyDrugData
         };
         append(newDrug);
@@ -449,7 +425,7 @@ export default function PharmaFlashClient() {
     };
     
     const proceedWithNavigation = (targetDate: Date) => {
-      reset(); // Discard changes
+      reset(); 
       setSelectedDate(targetDate);
       setIsCalendarOpen(false);
       setPendingDate(null);
@@ -466,7 +442,6 @@ export default function PharmaFlashClient() {
       } else {
         setSelectedDate(targetDate);
         setIsCalendarOpen(false);
-        // Important: Exit edit mode when navigating
         setIsEditing(false);
       }
     };
@@ -500,7 +475,7 @@ export default function PharmaFlashClient() {
       
             if (mode === 'all') {
                 setDrugFormValues(index, result, options);
-            } else { // 'blank' mode
+            } else { 
               const currentValues = getValues(`drugs.${index}`);
               const valuesToSet: Partial<DrugHighlight> = {};
               
@@ -524,12 +499,21 @@ export default function PharmaFlashClient() {
               title: 'AI Auto-fill Complete',
               description: `Information for ${result.drugName || drugNameValue} has been populated.`,
             });
-          } catch (error) {
+          } catch (error: any) {
             console.error('Error fetching data from AI:', error);
+            
+            let errorMessage = 'Could not fetch drug information. Please try again.';
+            
+            if (error.message?.toLowerCase().includes('leaked')) {
+              errorMessage = 'Your Gemini API key was reported as leaked and has been disabled by Google. Please generate a new key at aistudio.google.com and update your environment variables.';
+            } else if (error.message?.includes('403') || error.message?.includes('401')) {
+              errorMessage = 'AI service permission error. Please check your API key and project billing status.';
+            }
+
             toast({
               variant: 'destructive',
               title: 'AI Auto-fill Failed',
-              description: 'Could not fetch drug information. Please try again.',
+              description: errorMessage,
             });
           } finally {
             setIsFetchingAI(false);
@@ -553,7 +537,7 @@ export default function PharmaFlashClient() {
               });
               setActiveDrugIndex(currentIndex);
               setIsDuplicateDrugDialogOpen(true);
-              return; // Found a duplicate, stop searching
+              return; 
             }
           }
         }
@@ -561,7 +545,7 @@ export default function PharmaFlashClient() {
       
       const handleConfirmRepeat = () => {
         if (duplicateDrugInfo && activeDrugIndex !== null) {
-          const { id, ...dataToCopy } = duplicateDrugInfo.data; // Exclude original ID
+          const { id, ...dataToCopy } = duplicateDrugInfo.data; 
           setDrugFormValues(activeDrugIndex, dataToCopy, { shouldDirty: true });
           toast({
             title: 'Data Copied',
@@ -583,7 +567,7 @@ export default function PharmaFlashClient() {
       };
 
     const initialCarouselIndex = useMemo(() => {
-        if (!isClient) return datesForNavigation.length - 1; // Default for SSR
+        if (!isClient) return datesForNavigation.length - 1; 
         const index = datesForNavigation.findIndex(
           (d) => format(d, 'yyyy-MM-dd') === dateString
         );
@@ -628,7 +612,6 @@ export default function PharmaFlashClient() {
             control={control}
             name={`drugs.${index}.${fieldName}`}
             render={({ field }) => {
-              // Ensure field.value is a string for input components
               const value = getDisplayValue(field.value);
               return (
                 <FormItem className="w-full">
@@ -703,12 +686,12 @@ export default function PharmaFlashClient() {
                     <Button
                       variant={isSelected ? 'default' : 'outline'}
                       className={cn(
-                        'flex-col h-auto p-2 w-full text-xs',
-                        isSelected && 'bg-accent text-accent-foreground hover:bg-accent/90',
+                        'flex-col h-auto p-2 w-full text-xs transition-all duration-200',
+                        isSelected && 'bg-primary text-primary-foreground hover:bg-primary/90 scale-105 shadow-md',
                         !isSelected &&
                           hasData &&
-                          'bg-primary/20 border-primary/50',
-                        !isSelected && !hasData && 'bg-secondary/50'
+                          'bg-primary/10 border-primary/30 text-primary',
+                        !isSelected && !hasData && 'bg-secondary/50 text-muted-foreground'
                       )}
                       onClick={() => handleDateNavigation(date)}
                     >
@@ -716,10 +699,10 @@ export default function PharmaFlashClient() {
                       <span className="text-lg font-bold">
                         {format(date, 'd')}
                       </span>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs opacity-70">
                         {isClient && isToday(date) ? 'Today' : format(date, 'MMM')}
                       </span>
-                      <span className="text-xs font-semibold text-primary whitespace-normal text-center mt-1 min-h-[4em] h-auto leading-tight flex flex-col items-center justify-center">
+                      <span className="text-xs font-semibold whitespace-normal text-center mt-1 min-h-[4em] h-auto leading-tight flex flex-col items-center justify-center">
                         {dayDrugData?.map(d => d.drugName).join(', ')}
                       </span>
                     </Button>
@@ -754,8 +737,10 @@ export default function PharmaFlashClient() {
                 modifiers={{ hasData: hasDataModifier }}
                 modifiersStyles={{
                   hasData: {
-                    backgroundColor: 'hsl(var(--primary) / 0.2)',
-                    border: '1px solid hsl(var(--primary) / 0.5)',
+                    backgroundColor: 'hsl(var(--primary) / 0.15)',
+                    border: '1px solid hsl(var(--primary) / 0.4)',
+                    color: 'hsl(var(--primary))',
+                    fontWeight: 'bold'
                   },
                 }}
               />
@@ -842,7 +827,7 @@ export default function PharmaFlashClient() {
                         className="border rounded-lg overflow-hidden"
                         ref={(el) => drugAccordionRefs.current.set(field.id, el)}
                     >
-                      <AccordionTrigger className="px-4 py-2 bg-secondary/50 hover:no-underline">
+                      <AccordionTrigger className="px-4 py-2 bg-accent/50 hover:no-underline">
                         <div className="flex items-center gap-2">
                           {isEditing && <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />}
                           <span className="font-semibold text-lg">{getValues(`drugs.${index}.drugName`) || `New Drug ${index + 1}`}</span>
@@ -850,7 +835,6 @@ export default function PharmaFlashClient() {
                       </AccordionTrigger>
                       <AccordionContent>
                         <div className="p-4 space-y-4">
-                            {/* Drug Name */}
                             <div className="flex items-start gap-4">
                                 <label className="w-1/3 text-sm font-semibold pt-2 text-right">Drug of the Day</label>
                                 <div className="w-2/3">
@@ -858,7 +842,6 @@ export default function PharmaFlashClient() {
                                 </div>
                             </div>
 
-                            {/* Other Fields */}
                             {formFields.map(fieldInfo => (
                                 <div key={fieldInfo.key} className="flex items-start gap-4">
                                     <label className="w-1/3 text-sm font-semibold pt-2 text-right">{fieldInfo.label}</label>
@@ -868,7 +851,6 @@ export default function PharmaFlashClient() {
                                 </div>
                             ))}
 
-                            {/* Off Label Use */}
                             <div className="flex items-start gap-4">
                                 <label className="w-1/3 text-sm font-semibold pt-2 text-right">Off Label Use</label>
                                 <div className="w-2/3">
@@ -1012,7 +994,6 @@ export default function PharmaFlashClient() {
           onOpenChange={setIsNotifyStaffDialogOpen}
           dailyHighlight={dailyData}
         />
-         <InfographicDialog />
         <AlertDialog open={isUnsavedChangesDialogOpen} onOpenChange={setIsUnsavedChangesDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -1042,17 +1023,4 @@ export default function PharmaFlashClient() {
         )}
       </>
     );
-  }
-
-    
-
-    
-
-
-
-
-
-
-
-
-
+}
