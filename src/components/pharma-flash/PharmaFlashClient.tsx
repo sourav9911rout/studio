@@ -80,9 +80,6 @@ import {
   Link as LinkIcon,
   Mail,
   AlertCircle,
-  Key,
-  ExternalLink,
-  CheckCircle2,
 } from 'lucide-react';
 import {
   Carousel,
@@ -103,7 +100,6 @@ import { Textarea } from '../ui/textarea';
 import { ThemeToggle } from '../ThemeToggle';
 import { getDrugInfo, type GetDrugInfoOutput } from '@/ai/flows/drug-info-flow';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
-import { Label } from '../ui/label';
 
 const offLabelUseSchema = z.object({
   value: z.string(),
@@ -254,9 +250,6 @@ export default function PharmaFlashClient() {
     const drugAccordionRefs = useRef<Map<string, HTMLElement | null>>(new Map());
     const [isNotifyStaffDialogOpen, setIsNotifyStaffDialogOpen] = useState(false);
     
-    const [userApiKey, setUserApiKey] = useState<string>('');
-    const [localKeyInput, setLocalKeyInput] = useState<string>('');
-
   
     const { toast } = useToast();
     const firestore = useFirestore();
@@ -285,11 +278,8 @@ export default function PharmaFlashClient() {
     
     useEffect(() => {
         setIsClient(true);
-        const storedKey = localStorage.getItem('PHARMA_GEMINI_KEY');
-        if (storedKey) {
-            setUserApiKey(storedKey);
-            setLocalKeyInput(storedKey);
-        }
+        // Cleanup old local storage keys as requested
+        localStorage.removeItem('PHARMA_GEMINI_KEY');
 
         const params = new URLSearchParams(window.location.search);
         const dateParam = params.get('date');
@@ -493,8 +483,7 @@ export default function PharmaFlashClient() {
           setIsFetchingAI(true);
           setAiError(null);
           try {
-            const keyToUse = localStorage.getItem('PHARMA_GEMINI_KEY') || userApiKey || '';
-            const result = await getDrugInfo({ drugName: drugNameValue, userApiKey: keyToUse });
+            const result = await getDrugInfo({ drugName: drugNameValue });
             const options = { shouldDirty: true };
       
             if (mode === 'all') {
@@ -524,14 +513,11 @@ export default function PharmaFlashClient() {
           } catch (error: any) {
             console.error('Error fetching data from AI:', error);
             
-            let errorMessage = 'Could not fetch drug information. Please check your API key.';
+            let errorMessage = 'Could not fetch drug information.';
             const msg = error.message || '';
 
-            if (msg.includes('SYSTEM_KEY_LEAKED')) {
-                errorMessage = 'The system API key is currently flagging as exposed. Please provide your own Gemini API key using the Key icon in the top-right corner.';
-                setAiError(errorMessage);
-            } else if (msg.includes('PERSONAL_KEY_LEAKED')) {
-                errorMessage = 'The personal API key you provided has been flagged as leaked. Please generate a NEW key at Google AI Studio and replace it.';
+            if (msg.includes('API_KEY_EXPOSED')) {
+                errorMessage = 'The system API key is currently flagged as exposed. Please update the GEMINI_API_KEY environment variable in your deployment dashboard.';
                 setAiError(errorMessage);
             } else if (msg.toLowerCase().includes('high demand') || msg.includes('503')) {
                 errorMessage = 'The AI service is temporarily overloaded. Please wait 30 seconds and try again.';
@@ -624,21 +610,6 @@ export default function PharmaFlashClient() {
         element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       };
 
-    const handleSaveLocalKey = () => {
-        if (localKeyInput.trim() === '') {
-            localStorage.removeItem('PHARMA_GEMINI_KEY');
-            setUserApiKey('');
-        } else {
-            localStorage.setItem('PHARMA_GEMINI_KEY', localKeyInput.trim());
-            setUserApiKey(localKeyInput.trim());
-        }
-        setAiError(null); 
-        toast({
-            title: 'Settings Updated',
-            description: localKeyInput.trim() === '' ? 'Personal API key removed.' : 'Your personal Gemini API key is now active.',
-        });
-    };
-      
     const renderField = (
         index: number,
         label: string,
@@ -697,74 +668,10 @@ export default function PharmaFlashClient() {
           <p className="text-center text-xl font-headline text-primary/80 mt-2 font-bold italic">
             An initiative of Department of Pharmacology, AIIMS-CAPFIMS
           </p>
-          <p className="text-center text-3xl mt-3 font-headline font-bold text-primary">
+          <p className="text-center text-[40px] mt-3 font-headline font-bold text-primary">
             <b>भेषजगुण विज्ञान विभाग</b>
           </p>
           <div className="absolute top-6 right-6 flex items-center gap-2">
-            {isEditing && (
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button 
-                            variant={userApiKey ? "default" : "outline"} 
-                            size="icon" 
-                            className={cn(
-                                "rounded-full shadow-sm",
-                                userApiKey && "bg-green-600 hover:bg-green-700 text-white"
-                            )}
-                        >
-                            <Key className="h-4 w-4" />
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80 p-6 rounded-3xl" align="end">
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                                    <Key className="h-4 w-4 text-primary" />
-                                    <h4 className="font-bold font-headline text-lg">AI Settings</h4>
-                                </div>
-                                {userApiKey && <CheckCircle2 className="h-4 w-4 text-green-600" />}
-                            </div>
-                            <div className="space-y-3">
-                              <p className="text-xs text-muted-foreground leading-relaxed">
-                                  {userApiKey 
-                                    ? "Your personal API key is currently being used to power AI features."
-                                    : "Enter your personal Gemini API key to bypass global rate limits. This key is stored locally in your browser."}
-                              </p>
-                              <a 
-                                href="https://aistudio.google.com/app/apikey" 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline group"
-                              >
-                                Get a free key at Google AI Studio
-                                <ExternalLink className="h-3 w-3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-                              </a>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="api-key" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">API Key</Label>
-                                <Input 
-                                    id="api-key"
-                                    type="password" 
-                                    placeholder="Paste API Key here..." 
-                                    className="rounded-xl font-body text-sm"
-                                    value={localKeyInput}
-                                    onChange={(e) => setLocalKeyInput(e.target.value)}
-                                />
-                            </div>
-                            <div className="flex gap-2">
-                                <Button className="flex-1 rounded-xl font-bold" onClick={handleSaveLocalKey}>
-                                    Save Key
-                                </Button>
-                                {userApiKey && (
-                                    <Button variant="outline" className="rounded-xl font-bold" onClick={() => { setLocalKeyInput(''); handleSaveLocalKey(); }}>
-                                        Clear
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
-                    </PopoverContent>
-                </Popover>
-            )}
             <ThemeToggle />
           </div>
         </div>
@@ -822,7 +729,7 @@ export default function PharmaFlashClient() {
                         isSelected ? "opacity-100 translate-y-0" : "opacity-70 group-hover:opacity-100"
                       )}>
                         <p className={cn(
-                          "text-[9px] leading-tight font-black line-clamp-3 uppercase tracking-tight",
+                          "text-[8px] leading-tight font-black line-clamp-3 uppercase tracking-tight",
                           isSelected ? "text-primary-foreground" : "text-primary"
                         )}>
                           {dayDrugData?.map(d => d.drugName).join(', ') || (hasData ? 'Highlights' : '')}

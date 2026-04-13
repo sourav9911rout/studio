@@ -9,12 +9,9 @@
  */
 
 import { ai, z } from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/google-genai';
-import { genkit } from 'genkit';
 
 const GetDrugInfoInputSchema = z.object({
   drugName: z.string().describe('The name of the drug to look up.'),
-  userApiKey: z.string().optional().describe('An optional user-provided API key to bypass environment limits.'),
 });
 export type GetDrugInfoInput = z.infer<typeof GetDrugInfoInputSchema>;
 
@@ -62,49 +59,15 @@ Return only the requested information as a JSON object with the specified keys. 
 - Fun Fact`;
 
 export async function getDrugInfo(input: GetDrugInfoInput): Promise<GetDrugInfoOutput> {
-  const apiKeyToUse = input.userApiKey?.trim();
-
-  // If a user API key is provided, we use a local Genkit instance to prioritize it.
-  if (apiKeyToUse && apiKeyToUse !== '') {
-    try {
-      const plugin = googleAI({ apiKey: apiKeyToUse });
-      const localAi = genkit({
-        plugins: [plugin],
-      });
-
-      const response = await localAi.generate({
-        model: 'googleai/gemini-2.5-flash',
-        system: SYSTEM_PROMPT,
-        prompt: `Provide details for the drug: ${input.drugName}`,
-        output: { schema: GetDrugInfoOutputSchema },
-      });
-
-      if (!response.output) {
-        throw new Error('AI returned an empty response. Please check your drug name.');
-      }
-      return response.output;
-    } catch (error: any) {
-      console.error('Error in local AI generation:', error);
-      const msg = error.message?.toLowerCase() || '';
-      
-      if (msg.includes('leaked') || msg.includes('exposed')) {
-        throw new Error('PERSONAL_KEY_LEAKED: The personal API key you provided has been flagged as leaked by Google. Please generate a fresh key at Google AI Studio.');
-      }
-      
-      if (msg.includes('high demand') || msg.includes('503') || msg.includes('unavailable')) {
-        throw new Error('The AI model is currently experiencing high demand. Please try again in about 30 seconds.');
-      }
-      throw error;
-    }
-  }
-
-  // Otherwise use the default registered flow (which uses the system environment key)
   try {
     return await getDrugInfoFlow(input);
   } catch (error: any) {
     const msg = error.message?.toLowerCase() || '';
     if (msg.includes('leaked') || msg.includes('exposed')) {
-      throw new Error('SYSTEM_KEY_LEAKED: The system API key is currently flagged as exposed. To continue using AI features, please provide your own API key in the settings tab (Key icon).');
+      throw new Error('API_KEY_EXPOSED: The system API key has been flagged as exposed. Please update the GEMINI_API_KEY in your deployment environment.');
+    }
+    if (msg.includes('high demand') || msg.includes('503') || msg.includes('unavailable')) {
+      throw new Error('The AI model is currently experiencing high demand. Please try again in a moment.');
     }
     throw error;
   }
@@ -125,18 +88,10 @@ const getDrugInfoFlow = ai.defineFlow(
     outputSchema: GetDrugInfoOutputSchema,
   },
   async (input) => {
-    try {
-      const { output } = await prompt(input);
-      if (!output) {
-        throw new Error('Failed to get drug information from AI.');
-      }
-      return output;
-    } catch (error: any) {
-      const msg = error.message?.toLowerCase() || '';
-      if (msg.includes('high demand') || msg.includes('503') || msg.includes('unavailable')) {
-        throw new Error('The AI model is currently experiencing high demand. Please try again in a moment.');
-      }
-      throw error;
+    const { output } = await prompt(input);
+    if (!output) {
+      throw new Error('Failed to get drug information from AI.');
     }
+    return output;
   }
 );
