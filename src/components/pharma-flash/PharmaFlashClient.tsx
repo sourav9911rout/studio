@@ -666,7 +666,7 @@ export default function PharmaFlashClient() {
           </div>
         </div>
   
-        <div className="px-12 pb-6">
+        <div className="px-12 pb-10">
           <Carousel
             opts={{
               align: 'start',
@@ -684,44 +684,52 @@ export default function PharmaFlashClient() {
                 return (
                   <CarouselItem
                     key={date.toString()}
-                    className="basis-1/4 sm:basis-1/5 md:basis-[14%] lg:basis-[12%]"
+                    className="basis-1/4 sm:basis-1/5 md:basis-[16%] lg:basis-[14%]"
                   >
                     <button
                       className={cn(
-                        'flex flex-col items-center justify-center h-28 w-full transition-all duration-300 rounded-2xl relative border',
+                        'flex flex-col items-center justify-between py-4 w-full h-36 transition-all duration-300 rounded-3xl relative border shadow-sm group overflow-hidden',
                         isSelected 
-                          ? 'bg-primary text-primary-foreground shadow-lg scale-105 border-primary z-10' 
+                          ? 'bg-primary text-primary-foreground shadow-xl scale-105 border-primary z-10' 
                           : 'bg-card hover:bg-accent/50 text-card-foreground border-border hover:border-primary/50',
                         !isSelected && hasData && 'bg-primary/5 border-primary/20'
                       )}
                       onClick={() => handleDateNavigation(date)}
                     >
-                      <span className={cn(
-                        "text-[10px] uppercase tracking-wider font-bold",
-                        isSelected ? "text-primary-foreground/80" : "text-muted-foreground"
-                      )}>
-                        {format(date, 'EEE')}
-                      </span>
-                      <span className="text-2xl font-black my-1 leading-none">
-                        {format(date, 'd')}
-                      </span>
-                      <span className={cn(
-                        "text-[10px] font-semibold",
-                        isSelected ? "text-primary-foreground/90" : "text-primary"
-                      )}>
-                        {isClient && isToday(date) ? 'TODAY' : format(date, 'MMM').toUpperCase()}
-                      </span>
-                      
-                      {hasData && !isSelected && (
-                        <div className="absolute bottom-2 h-1 w-1 rounded-full bg-primary" />
-                      )}
-                      
-                      <div className={cn(
-                        "text-[8px] font-bold absolute -bottom-4 w-full text-center truncate px-1 mt-1 transition-opacity",
-                        isSelected ? "opacity-100" : "opacity-0"
-                      )}>
-                        {dayDrugData?.map(d => d.drugName).join(', ')}
+                      <div className="flex flex-col items-center">
+                        <span className={cn(
+                          "text-[10px] uppercase tracking-wider font-black opacity-60",
+                          isSelected ? "text-primary-foreground" : "text-muted-foreground"
+                        )}>
+                          {format(date, 'EEE')}
+                        </span>
+                        <span className="text-3xl font-black mt-1 leading-none tracking-tighter">
+                          {format(date, 'd')}
+                        </span>
+                        <span className={cn(
+                          "text-[10px] font-bold mt-1",
+                          isSelected ? "text-primary-foreground/90" : "text-primary"
+                        )}>
+                          {isClient && isToday(date) ? 'TODAY' : format(date, 'MMM').toUpperCase()}
+                        </span>
                       </div>
+                      
+                      {/* Drug Names Section */}
+                      <div className={cn(
+                        "w-full px-2 text-center overflow-hidden transition-all duration-300",
+                        isSelected ? "opacity-100 translate-y-0" : "opacity-70 group-hover:opacity-100"
+                      )}>
+                        <p className={cn(
+                          "text-[9px] leading-tight font-bold line-clamp-2",
+                          isSelected ? "text-primary-foreground/90" : "text-muted-foreground"
+                        )}>
+                          {dayDrugData?.map(d => d.drugName).join(', ') || (hasData ? 'Highlights' : '')}
+                        </p>
+                      </div>
+
+                      {hasData && !isSelected && (
+                        <div className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                      )}
                     </button>
                   </CarouselItem>
                 );
