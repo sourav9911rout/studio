@@ -24,7 +24,7 @@ import { useFirestore, useUser, useAuth } from '@/firebase';
 import {
   setDocumentNonBlocking,
 } from '@/firebase/non-blocking-updates';
-import type { DailyHighlight, DrugHighlight, InfoWithReference } from '@/lib/types';
+import type { DailyHighlight, DrugHighlight } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -101,7 +101,7 @@ import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 import { cn } from '@/lib/utils';
 import { Textarea } from '../ui/textarea';
 import { ThemeToggle } from '../ThemeToggle';
-import { getDrugInfo, GetDrugInfoOutput } from '@/ai/flows/drug-info-flow';
+import { getDrugInfo, type GetDrugInfoOutput } from '@/ai/flows/drug-info-flow';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Label } from '../ui/label';
 
@@ -285,7 +285,6 @@ export default function PharmaFlashClient() {
     
     useEffect(() => {
         setIsClient(true);
-        // Load API key from local storage
         const storedKey = localStorage.getItem('PHARMA_GEMINI_KEY');
         if (storedKey) {
             setUserApiKey(storedKey);
@@ -317,19 +316,23 @@ export default function PharmaFlashClient() {
   
     const fetchAllDrugData = useCallback(async () => {
         if (!firestore) return;
-        const q = query(collection(firestore, 'drugHighlights'));
-        const querySnapshot = await getDocs(q);
-        const newAllData = new Map<string, DrugHighlight[]>();
-        const newDatesWithData = new Set<string>();
-        querySnapshot.forEach((doc) => {
-            const normalizedData = normalizeDailyHighlight(doc.id, doc.data());
-            if (normalizedData.drugs.length > 0) {
-              newAllData.set(doc.id, normalizedData.drugs);
-              newDatesWithData.add(doc.id);
-            }
-        });
-        setAllDrugData(newAllData);
-        setDatesWithData(newDatesWithData);
+        try {
+          const q = query(collection(firestore, 'drugHighlights'));
+          const querySnapshot = await getDocs(q);
+          const newAllData = new Map<string, DrugHighlight[]>();
+          const newDatesWithData = new Set<string>();
+          querySnapshot.forEach((doc) => {
+              const normalizedData = normalizeDailyHighlight(doc.id, doc.data());
+              if (normalizedData.drugs.length > 0) {
+                newAllData.set(doc.id, normalizedData.drugs);
+                newDatesWithData.add(doc.id);
+              }
+          });
+          setAllDrugData(newAllData);
+          setDatesWithData(newDatesWithData);
+        } catch (error) {
+          console.error('Error fetching all drug data:', error);
+        }
       }, [firestore]);
     
       useEffect(() => {
@@ -468,14 +471,12 @@ export default function PharmaFlashClient() {
     };
   
     const setDrugFormValues = (index: number, data: Partial<GetDrugInfoOutput>, options: { shouldDirty: boolean }) => {
-        Object.keys(data).forEach(keyStr => {
-            const key = keyStr as keyof GetDrugInfoOutput;
-            const value = data[key];
-            if (value !== undefined) {
-              // @ts-ignore
-              form.setValue(`drugs.${index}.${key}`, value, options);
-            }
-          });
+        Object.entries(data).forEach(([key, value]) => {
+          if (value !== undefined) {
+            // @ts-ignore
+            form.setValue(`drugs.${index}.${key}`, value, options);
+          }
+        });
     };
   
     const handleAutofill = async (index: number, mode: 'all' | 'blank') => {
@@ -501,17 +502,15 @@ export default function PharmaFlashClient() {
               const currentValues = getValues(`drugs.${index}`);
               const valuesToSet: Partial<DrugHighlight> = {};
               
-              Object.keys(result).forEach(keyStr => {
-                const key = keyStr as keyof DrugHighlight;
-                
+              Object.entries(result).forEach(([key, value]) => {
                 if (key === 'offLabelUse') {
                   if (!currentValues.offLabelUse.value) {
                      // @ts-ignore
-                    valuesToSet.offLabelUse = result.offLabelUse;
+                    valuesToSet.offLabelUse = value;
                   }
-                } else if (!currentValues[key]) {
+                } else if (!currentValues[key as keyof DrugHighlight]) {
                    // @ts-ignore
-                  valuesToSet[key] = result[key];
+                  valuesToSet[key as keyof DrugHighlight] = value;
                 }
               });
               setDrugFormValues(index, valuesToSet, options);
@@ -692,7 +691,7 @@ export default function PharmaFlashClient() {
             An initiative of Department of Pharmacology, AIIMS-CAPFIMS
           </p>
           <p className="text-center text-2xl mt-3 font-headline font-bold text-primary">
-            भेषजगुण विज्ञान विभाग
+            <b>भेषजगुण विज्ञान विभाग</b>
           </p>
           <div className="absolute top-6 right-6 flex items-center gap-2">
             {isEditing && (
@@ -811,7 +810,6 @@ export default function PharmaFlashClient() {
                         </span>
                       </div>
                       
-                      {/* Drug Names Section */}
                       <div className={cn(
                         "w-full px-1 text-center overflow-hidden transition-all duration-300 mt-2",
                         isSelected ? "opacity-100 translate-y-0" : "opacity-70 group-hover:opacity-100"
@@ -1029,7 +1027,7 @@ export default function PharmaFlashClient() {
                                   ) : (
                                     <div className="space-y-6">
                                       <div className="text-primary text-base min-h-[2.5rem] py-2 whitespace-pre-wrap font-body leading-relaxed">
-                                        {getDisplayValue(watchedDrugs[index]?.offLabelUse) || 'No data available.'}
+                                        {watchedDrugs[index]?.offLabelUse?.value || 'No data available.'}
                                       </div>
                                       {watchedDrugs[index]?.offLabelUse?.references && watchedDrugs[index]?.offLabelUse.references.length > 0 && (
                                         <div className="bg-accent/20 p-6 rounded-[2rem] space-y-3 border border-accent/40 shadow-inner">
