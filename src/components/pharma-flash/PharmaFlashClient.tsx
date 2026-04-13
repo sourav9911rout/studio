@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -78,6 +79,7 @@ import {
   GripVertical,
   Link as LinkIcon,
   Mail,
+  AlertCircle,
 } from 'lucide-react';
 import {
   Carousel,
@@ -97,6 +99,7 @@ import { cn } from '@/lib/utils';
 import { Textarea } from '../ui/textarea';
 import { ThemeToggle } from '../ThemeToggle';
 import { getDrugInfo, GetDrugInfoOutput } from '@/ai/flows/drug-info-flow';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 
 const offLabelUseSchema = z.object({
   value: z.string(),
@@ -236,6 +239,7 @@ export default function PharmaFlashClient() {
     const [isDownloadDialogOpen, setIsDownloadDialogOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isFetchingAI, setIsFetchingAI] = useState(false);
+    const [aiError, setAiError] = useState<string | null>(null);
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const [isUnsavedChangesDialogOpen, setIsUnsavedChangesDialogOpen] = useState(false);
     const [pendingDate, setPendingDate] = useState<Date | null>(null);
@@ -422,6 +426,7 @@ export default function PharmaFlashClient() {
             reset(getEmptyDailyHighlight(dateString));
           }
           setIsEditing(false);
+          setAiError(null);
     };
     
     const proceedWithNavigation = (targetDate: Date) => {
@@ -430,6 +435,7 @@ export default function PharmaFlashClient() {
       setIsCalendarOpen(false);
       setPendingDate(null);
       setIsUnsavedChangesDialogOpen(false);
+      setAiError(null);
     };
     
   
@@ -443,6 +449,7 @@ export default function PharmaFlashClient() {
         setSelectedDate(targetDate);
         setIsCalendarOpen(false);
         setIsEditing(false);
+        setAiError(null);
       }
     };
   
@@ -469,6 +476,7 @@ export default function PharmaFlashClient() {
           }
       
           setIsFetchingAI(true);
+          setAiError(null);
           try {
             const result = await getDrugInfo({ drugName: drugNameValue });
             const options = { shouldDirty: true };
@@ -505,7 +513,8 @@ export default function PharmaFlashClient() {
             let errorMessage = 'Could not fetch drug information. Please try again.';
             
             if (error.message?.toLowerCase().includes('leaked')) {
-              errorMessage = 'Your Gemini API key was reported as leaked. Please generate a new key at aistudio.google.com and update it privately.';
+              errorMessage = 'Your Gemini API key was reported as leaked and has been disabled by Google. Please generate a NEW key at aistudio.google.com and update it in your project settings.';
+              setAiError(errorMessage);
             } else if (error.message?.includes('403') || error.message?.includes('401')) {
               errorMessage = 'AI service permission error. Please check your API key and project billing status.';
             }
@@ -648,25 +657,22 @@ export default function PharmaFlashClient() {
   
     return (
       <>
-        <div className="p-6 relative">
-          <h1 className="text-3xl font-headline font-bold text-center tracking-tight text-primary">
+        <div className="p-8 relative">
+          <h1 className="text-4xl font-headline font-bold text-center tracking-tight text-primary">
             Daily Drug Highlight
           </h1>
-          <p className="text-center text-xl font-headline text-primary mt-1 font-bold">
-            भेषजगुण विज्ञान विभाग
-          </p>
-          <p className="text-center text-lg font-headline text-primary/80 mt-1 italic">
+          <p className="text-center text-xl font-headline text-primary/80 mt-2 font-bold italic">
             An initiative of Department of Pharmacology, AIIMS-CAPFIMS
           </p>
-          <p className="text-center text-xl mt-2 font-headline text-primary">
-            Your daily dose of Pharmacology.
+          <p className="text-center text-lg mt-3 font-headline text-muted-foreground">
+            भेषजगुण विज्ञान विभाग
           </p>
-          <div className="absolute top-4 right-4">
+          <div className="absolute top-6 right-6">
             <ThemeToggle />
           </div>
         </div>
   
-        <div className="px-12 pb-10">
+        <div className="px-12 pb-12">
           <Carousel
             opts={{
               align: 'start',
@@ -688,9 +694,9 @@ export default function PharmaFlashClient() {
                   >
                     <button
                       className={cn(
-                        'flex flex-col items-center justify-between py-4 w-full h-36 transition-all duration-300 rounded-3xl relative border shadow-sm group overflow-hidden',
+                        'flex flex-col items-center justify-between p-4 w-full h-44 transition-all duration-500 rounded-[2rem] relative border shadow-sm group overflow-hidden',
                         isSelected 
-                          ? 'bg-primary text-primary-foreground shadow-xl scale-105 border-primary z-10' 
+                          ? 'bg-primary text-primary-foreground shadow-2xl scale-105 border-primary z-10 ring-4 ring-primary/20' 
                           : 'bg-card hover:bg-accent/50 text-card-foreground border-border hover:border-primary/50',
                         !isSelected && hasData && 'bg-primary/5 border-primary/20'
                       )}
@@ -698,16 +704,16 @@ export default function PharmaFlashClient() {
                     >
                       <div className="flex flex-col items-center">
                         <span className={cn(
-                          "text-[10px] uppercase tracking-wider font-black opacity-60",
+                          "text-[10px] uppercase tracking-widest font-black opacity-60 mb-1",
                           isSelected ? "text-primary-foreground" : "text-muted-foreground"
                         )}>
                           {format(date, 'EEE')}
                         </span>
-                        <span className="text-3xl font-black mt-1 leading-none tracking-tighter">
+                        <span className="text-4xl font-headline font-black leading-none tracking-tighter">
                           {format(date, 'd')}
                         </span>
                         <span className={cn(
-                          "text-[10px] font-bold mt-1",
+                          "text-[10px] font-bold mt-2",
                           isSelected ? "text-primary-foreground/90" : "text-primary"
                         )}>
                           {isClient && isToday(date) ? 'TODAY' : format(date, 'MMM').toUpperCase()}
@@ -716,19 +722,19 @@ export default function PharmaFlashClient() {
                       
                       {/* Drug Names Section */}
                       <div className={cn(
-                        "w-full px-2 text-center overflow-hidden transition-all duration-300",
+                        "w-full px-1 text-center overflow-hidden transition-all duration-300 mt-2",
                         isSelected ? "opacity-100 translate-y-0" : "opacity-70 group-hover:opacity-100"
                       )}>
                         <p className={cn(
-                          "text-[11px] leading-tight font-bold line-clamp-2",
-                          isSelected ? "text-primary-foreground/90" : "text-muted-foreground"
+                          "text-base leading-tight font-black line-clamp-2 uppercase tracking-tight",
+                          isSelected ? "text-primary-foreground" : "text-primary"
                         )}>
                           {dayDrugData?.map(d => d.drugName).join(', ') || (hasData ? 'Highlights' : '')}
                         </p>
                       </div>
 
                       {hasData && !isSelected && (
-                        <div className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                        <div className="absolute top-3 right-3 h-2 w-2 rounded-full bg-primary animate-pulse" />
                       )}
                     </button>
                   </CarouselItem>
@@ -740,16 +746,16 @@ export default function PharmaFlashClient() {
           </Carousel>
         </div>
   
-        <div className="flex justify-center pb-4 pt-4 border-t">
+        <div className="flex justify-center pb-6 pt-6 border-t bg-secondary/10">
           <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                size="sm"
-                className="flex items-center gap-2 rounded-full px-6"
+                size="lg"
+                className="flex items-center gap-2 rounded-full px-8 shadow-sm hover:shadow-md transition-all"
               >
-                <CalendarIcon className="h-4 w-4" />
-                Select specific date
+                <CalendarIcon className="h-5 w-5" />
+                Jump to specific date
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="center">
@@ -773,25 +779,24 @@ export default function PharmaFlashClient() {
           </Popover>
         </div>
   
-        <div className="px-6 pb-6">
-          <div className="flex justify-between items-center mb-6">
+        <div className="px-10 pb-10">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
             <div className="flex flex-col">
-              <h2 className="text-2xl font-headline font-bold flex items-center gap-2 text-primary">
-                <CalendarIcon className="h-6 w-6" />
+              <h2 className="text-3xl font-headline font-bold flex items-center gap-3 text-primary">
+                <CalendarIcon className="h-8 w-8" />
                 {format(selectedDate, 'MMMM d, yyyy')}
-                <Button variant="ghost" size="icon" className="h-8 w-8 ml-1" onClick={handleCopyLink}>
-                  <LinkIcon className="h-4 w-4" />
+                <Button variant="ghost" size="icon" className="h-10 w-10 ml-1 rounded-full" onClick={handleCopyLink}>
+                  <LinkIcon className="h-5 w-5" />
                 </Button>
               </h2>
               {isClient && isToday(selectedDate) && (
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-8">Today&apos;s Entry</span>
+                <span className="text-[10px] font-black text-primary/60 uppercase tracking-[0.3em] ml-11">Current Highlight</span>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-3">
             <Button
                 variant="outline"
-                size="sm"
-                className="rounded-full"
+                className="rounded-full px-6 shadow-sm"
                 onClick={() => setIsNotifyStaffDialogOpen(true)}
                 disabled={isLoading || !dailyData || dailyData.drugs.length === 0}
               >
@@ -799,43 +804,50 @@ export default function PharmaFlashClient() {
               </Button>
               <Button
                 variant="outline"
-                size="sm"
-                className="rounded-full"
+                className="rounded-full px-6 shadow-sm"
                 onClick={() => setIsDownloadDialogOpen(true)}
               >
-                <Download className="mr-2 h-4 w-4" /> PDF Export
+                <Download className="mr-2 h-4 w-4" /> Export PDF
               </Button>
               {!isEditing ? (
                 <Button
-                  variant="primary"
-                  size="sm"
-                  className="rounded-full px-6"
+                  variant="default"
+                  className="rounded-full px-8 shadow-lg shadow-primary/20"
                   onClick={() => setIsPinDialogOpen(true)}
                 >
-                  <Pencil className="mr-2 h-4 w-4" /> Edit Highlights
+                  <Pencil className="mr-2 h-4 w-4" /> Manage Entry
                 </Button>
               ) : (
                 <Button
                     variant="secondary"
-                    size="sm"
-                    className="rounded-full"
+                    className="rounded-full px-6"
                     onClick={handleAddNewDrug}
                 >
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Another Drug
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add Drug
                 </Button>
               )}
             </div>
           </div>
 
+          {aiError && isEditing && (
+            <Alert variant="destructive" className="mb-6 rounded-2xl bg-destructive/5 border-destructive/20">
+              <AlertCircle className="h-5 w-5" />
+              <AlertTitle className="font-bold">AI Service Disabled</AlertTitle>
+              <AlertDescription className="text-sm">
+                {aiError}
+              </AlertDescription>
+            </Alert>
+          )}
+
           {!isLoading && fields.length > 1 && (
-            <div className="mb-6 flex flex-wrap gap-2 items-center">
-              <span className="text-xs font-black text-muted-foreground uppercase tracking-wider">Quick Navigation:</span>
+            <div className="mb-8 flex flex-wrap gap-2 items-center">
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider mr-2">Jump to drug:</span>
               {fields.map((field, index) => (
                 <Button
                   key={field.id}
                   variant="secondary"
                   size="sm"
-                  className="rounded-full text-xs h-7 px-3"
+                  className="rounded-full text-xs font-bold h-8 px-4 border border-border/50"
                   onClick={() => handleScrollToDrug(field.id)}
                 >
                   {getValues(`drugs.${index}.drugName`) || `Drug ${index + 1}`}
@@ -847,53 +859,53 @@ export default function PharmaFlashClient() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSave)} suppressHydrationWarning>
               {isLoading ? (
-                <div className="space-y-4">
-                    <Skeleton className="h-12 w-full rounded-xl" />
-                    <Skeleton className="h-24 w-full rounded-xl" />
-                    <Skeleton className="h-24 w-full rounded-xl" />
+                <div className="space-y-6">
+                    <Skeleton className="h-16 w-full rounded-2xl" />
+                    <Skeleton className="h-32 w-full rounded-2xl" />
+                    <Skeleton className="h-32 w-full rounded-2xl" />
                 </div>
               ) : fields.length > 0 ? (
-                <Accordion type="multiple" defaultValue={fields.map(f => f.id)} className="w-full space-y-6">
+                <Accordion type="multiple" defaultValue={fields.map(f => f.id)} className="w-full space-y-8">
                   {fields.map((field, index) => (
                     <AccordionItem 
                         value={field.id} 
                         key={field.id} 
-                        className="border rounded-2xl overflow-hidden shadow-sm bg-card transition-all duration-200 hover:shadow-md"
+                        className="border rounded-[2.5rem] overflow-hidden shadow-sm bg-card transition-all duration-300 hover:shadow-xl border-border/60"
                         ref={(el) => drugAccordionRefs.current.set(field.id, el)}
                     >
-                      <AccordionTrigger className="px-6 py-4 bg-accent/30 hover:bg-accent/50 hover:no-underline transition-colors">
-                        <div className="flex items-center gap-3">
-                          {isEditing && <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />}
+                      <AccordionTrigger className="px-8 py-6 bg-accent/20 hover:bg-accent/40 hover:no-underline transition-colors border-b border-border/40">
+                        <div className="flex items-center gap-4">
+                          {isEditing && <GripVertical className="h-6 w-6 text-muted-foreground cursor-grab" />}
                           <div className="flex flex-col items-start">
-                            <span className="font-headline font-bold text-xl text-primary">
-                              {getValues(`drugs.${index}.drugName`) || `New Drug Entry ${index + 1}`}
+                            <span className="font-headline font-bold text-2xl text-primary tracking-tight">
+                              {getValues(`drugs.${index}.drugName`) || `New Pharmacological Entry`}
                             </span>
-                            <span className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase">
-                              Pharmacological Highlight
+                            <span className="text-[10px] text-muted-foreground font-black tracking-[0.2em] uppercase mt-1">
+                              Clinical Profile
                             </span>
                           </div>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent>
-                        <div className="p-8 space-y-8">
-                            <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-6 items-start">
-                                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground pt-3 md:text-right">Drug Name</label>
+                        <div className="p-10 space-y-10">
+                            <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-8 items-start">
+                                <label className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground pt-3 md:text-right">Drug Name</label>
                                 <div className="w-full">
                                     {renderField(index, 'Drug Name', isEditing, 'drugName')}
                                 </div>
                             </div>
 
                             {formFields.map(fieldInfo => (
-                                <div key={fieldInfo.key} className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-6 items-start">
-                                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground pt-3 md:text-right">{fieldInfo.label}</label>
+                                <div key={fieldInfo.key} className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-8 items-start">
+                                    <label className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground pt-3 md:text-right">{fieldInfo.label}</label>
                                     <div className="w-full">
                                         {renderField(index, fieldInfo.label, isEditing, fieldInfo.key, fieldInfo.isTextarea)}
                                     </div>
                                 </div>
                             ))}
 
-                            <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-6 items-start">
-                                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground pt-3 md:text-right">Off Label Use</label>
+                            <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-8 items-start">
+                                <label className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground pt-3 md:text-right">Off Label Use</label>
                                 <div className="w-full">
                                 {isEditing ? (
                                     <div className="space-y-4">
@@ -906,7 +918,7 @@ export default function PharmaFlashClient() {
                                               <Textarea
                                                 placeholder="Enter off label use details..."
                                                 {...field}
-                                                className="font-body min-h-[120px] rounded-xl"
+                                                className="font-body min-h-[140px] rounded-2xl"
                                               />
                                             </FormControl>
                                             <FormMessage />
@@ -916,27 +928,28 @@ export default function PharmaFlashClient() {
                                       <Button 
                                         type="button" 
                                         variant="outline" 
-                                        size="sm" 
-                                        className="rounded-full"
+                                        className="rounded-full px-6 shadow-sm"
                                         onClick={() => { setActiveDrugIndex(index); setIsReferenceDialogOpen(true); }}
                                       >
                                         <BookText className="mr-2 h-4 w-4" />
-                                        Manage References ({watchedDrugs[index]?.offLabelUse?.references?.length || 0})
+                                        Evidence & References ({watchedDrugs[index]?.offLabelUse?.references?.length || 0})
                                       </Button>
                                     </div>
                                   ) : (
-                                    <div className="space-y-4">
-                                      <div className="text-primary text-base min-h-[2.5rem] py-2 whitespace-pre-wrap font-body">
+                                    <div className="space-y-6">
+                                      <div className="text-primary text-base min-h-[2.5rem] py-2 whitespace-pre-wrap font-body leading-relaxed">
                                         {getDisplayValue(watchedDrugs[index]?.offLabelUse) || 'No data available.'}
                                       </div>
                                       {watchedDrugs[index]?.offLabelUse?.references && watchedDrugs[index]?.offLabelUse.references.length > 0 && (
-                                        <div className="bg-accent/30 p-4 rounded-xl space-y-2 border border-accent">
-                                          <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Scientific References:</h4>
-                                          <ul className="space-y-2">
+                                        <div className="bg-accent/20 p-6 rounded-[2rem] space-y-3 border border-accent/40 shadow-inner">
+                                          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Scientific Literature:</h4>
+                                          <ul className="space-y-3">
                                             {watchedDrugs[index].offLabelUse.references.map((ref, refIndex) => (
-                                              <li key={refIndex} className="flex items-start gap-2">
-                                                <LinkIcon className="h-3 w-3 mt-1 text-primary shrink-0" />
-                                                <a href={ref} target="_blank" rel="noopener noreferrer" className="text-primary text-xs hover:underline break-all leading-tight">
+                                              <li key={refIndex} className="flex items-start gap-3">
+                                                <div className="bg-primary/10 h-6 w-6 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                                                    <LinkIcon className="h-3 w-3 text-primary" />
+                                                </div>
+                                                <a href={ref} target="_blank" rel="noopener noreferrer" className="text-primary text-sm font-medium hover:underline break-all leading-snug">
                                                   {ref}
                                                 </a>
                                               </li>
@@ -951,23 +964,23 @@ export default function PharmaFlashClient() {
                         </div>
                         
                         {isEditing && (
-                          <div className="px-8 py-6 bg-secondary/20 border-t flex items-center justify-between">
-                              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Entry Management</span>
-                              <div className="flex items-center gap-3">
+                          <div className="px-10 py-8 bg-secondary/10 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-4">
+                              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Pharmacology Assistant</span>
+                              <div className="flex items-center gap-4">
                                   <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
-                                          <Button type="button" variant="outline" size="sm" className="rounded-full" disabled={isFetchingAI}>
-                                              {isFetchingAI ? ( <Loader2 className="mr-2 h-4 w-4 animate-spin" /> ) : ( <Sparkles className="mr-2 h-4 w-4" /> )}
-                                              AI Assistant
+                                          <Button type="button" variant="outline" className="rounded-full px-6 border-primary/20 hover:bg-primary/5" disabled={isFetchingAI}>
+                                              {isFetchingAI ? ( <Loader2 className="mr-2 h-4 w-4 animate-spin" /> ) : ( <Sparkles className="mr-2 h-4 w-4 text-primary" /> )}
+                                              AI Autofill
                                           </Button>
                                       </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end" className="rounded-xl">
-                                          <DropdownMenuItem onClick={() => handleAutofill(index, 'all')}>Fill All Fields (Complete Rewrite)</DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => handleAutofill(index, 'blank')}>Fill Missing Only</DropdownMenuItem>
+                                      <DropdownMenuContent align="end" className="rounded-2xl p-2 min-w-[200px]">
+                                          <DropdownMenuItem className="rounded-xl py-3" onClick={() => handleAutofill(index, 'all')}>Complete Profile Search</DropdownMenuItem>
+                                          <DropdownMenuItem className="rounded-xl py-3" onClick={() => handleAutofill(index, 'blank')}>Fill Missing Details Only</DropdownMenuItem>
                                       </DropdownMenuContent>
                                   </DropdownMenu>
 
-                                  <Button type="button" variant="destructive" size="sm" className="rounded-full" onClick={() => handleDeleteDrug(index)}>
+                                  <Button type="button" variant="destructive" className="rounded-full px-6 shadow-sm" onClick={() => handleDeleteDrug(index)}>
                                       <Trash2 className="mr-2 h-4 w-4" />
                                       Remove Entry
                                   </Button>
@@ -979,45 +992,45 @@ export default function PharmaFlashClient() {
                   ))}
                 </Accordion>
               ) : (
-                <div className="text-center py-20 border-2 border-dashed rounded-3xl bg-secondary/5">
-                    <div className="bg-primary/10 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <CalendarIcon className="h-8 w-8 text-primary/40" />
+                <div className="text-center py-24 border-2 border-dashed rounded-[3rem] bg-secondary/5 border-border/40">
+                    <div className="bg-primary/10 h-20 w-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                      <CalendarIcon className="h-10 w-10 text-primary/40" />
                     </div>
-                    <p className="text-muted-foreground font-medium">No pharmacological highlights have been recorded for this date.</p>
+                    <p className="text-muted-foreground font-headline text-xl">No daily highlights recorded for this date.</p>
                     {isEditing && (
                         <Button
                             variant="default"
                             size="lg"
-                            className="mt-6 rounded-full px-8"
+                            className="mt-8 rounded-full px-10 shadow-lg shadow-primary/20"
                             onClick={handleAddNewDrug}
                         >
-                            <PlusCircle className="mr-2 h-5 w-5" /> Start New Entry
+                            <PlusCircle className="mr-2 h-5 w-5" /> Start First Entry
                         </Button>
                     )}
                 </div>
               )}
               
               {isEditing && (
-                <div className="flex justify-end gap-3 mt-10 p-6 bg-card border rounded-3xl shadow-xl sticky bottom-4 z-20">
+                <div className="flex flex-col sm:flex-row justify-end gap-4 mt-12 p-8 bg-card border border-border/60 rounded-[3rem] shadow-2xl sticky bottom-6 z-20 backdrop-blur-sm bg-card/95">
                   <Button
                     type="button"
                     variant="ghost"
-                    className="rounded-full px-8"
+                    className="rounded-full px-10 font-bold hover:bg-destructive/5 hover:text-destructive"
                     onClick={handleCancelEdit}
                   >
-                    <X className="mr-2 h-4 w-4" /> Discard
+                    <X className="mr-2 h-5 w-5" /> Discard Edits
                   </Button>
                   <Button 
                     type="submit" 
-                    className="rounded-full px-10 shadow-lg shadow-primary/20"
+                    className="rounded-full px-12 py-6 text-lg font-bold shadow-xl shadow-primary/30"
                     disabled={isSaving || !isDirty}
                   >
                     {isSaving ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     ) : (
-                      <Save className="mr-2 h-4 w-4" />
+                      <Save className="mr-2 h-5 w-5" />
                     )}
-                    Commit Changes
+                    Commit to Database
                   </Button>
                 </div>
               )}
@@ -1052,18 +1065,18 @@ export default function PharmaFlashClient() {
           dailyHighlight={dailyData}
         />
         <AlertDialog open={isUnsavedChangesDialogOpen} onOpenChange={setIsUnsavedChangesDialogOpen}>
-          <AlertDialogContent className="rounded-3xl">
+          <AlertDialogContent className="rounded-[2.5rem]">
             <AlertDialogHeader>
-              <AlertDialogTitle className="text-2xl font-headline">Unsaved Changes</AlertDialogTitle>
-              <AlertDialogDescription>
-                You have active edits that haven&apos;t been committed. Navigating away will lose these changes permanently.
+              <AlertDialogTitle className="text-3xl font-headline">Unsaved Changes</AlertDialogTitle>
+              <AlertDialogDescription className="text-base leading-relaxed">
+                You have active pharmacological edits that haven&apos;t been committed. Navigating away will lose these details permanently.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel className="rounded-full" onClick={() => setPendingDate(null)}>
-                Stay Here
+            <AlertDialogFooter className="mt-6">
+              <AlertDialogCancel className="rounded-full px-8" onClick={() => setPendingDate(null)}>
+                Keep Editing
               </AlertDialogCancel>
-              <AlertDialogAction className="rounded-full" onClick={() => pendingDate && proceedWithNavigation(pendingDate)}>
+              <AlertDialogAction className="rounded-full px-8 bg-destructive hover:bg-destructive/90 text-destructive-foreground" onClick={() => pendingDate && proceedWithNavigation(pendingDate)}>
                 Discard Changes
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -1081,3 +1094,4 @@ export default function PharmaFlashClient() {
       </>
     );
 }
+
