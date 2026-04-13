@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -687,7 +686,7 @@ export default function PharmaFlashClient() {
           <p className="text-center text-xl font-headline text-primary/80 mt-2 font-bold italic">
             An initiative of Department of Pharmacology, AIIMS-CAPFIMS
           </p>
-          <p className="text-center text-lg mt-3 font-headline text-muted-foreground">
+          <p className="text-center text-lg mt-3 font-headline font-bold text-muted-foreground">
             भेषजगुण विज्ञान विभाग
           </p>
           <div className="absolute top-6 right-6 flex items-center gap-2">
