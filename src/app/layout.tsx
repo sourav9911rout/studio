@@ -5,7 +5,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { ThemeProvider } from '@/components/ThemeProvider';
 
 export const metadata: Metadata = {
-  title: 'Department of Pharmacology',
+  title: 'Daily Drug Highlight',
   description: 'Daily drug highlights for medical professionals.',
   icons: null,
 };
