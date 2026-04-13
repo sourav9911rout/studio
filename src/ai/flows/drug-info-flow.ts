@@ -63,22 +63,32 @@ Return only the requested information as a JSON object with the specified keys. 
 
 export async function getDrugInfo(input: GetDrugInfoInput): Promise<GetDrugInfoOutput> {
   // If a user API key is provided, we use a local Genkit instance to bypass global key limits/leaks
-  if (input.userApiKey) {
-    const localAi = genkit({
-      plugins: [googleAI({ apiKey: input.userApiKey })],
-      model: 'googleai/gemini-2.5-flash',
-    });
+  if (input.userApiKey && input.userApiKey.trim() !== '') {
+    try {
+      const plugin = googleAI({ apiKey: input.userApiKey });
+      const localAi = genkit({
+        plugins: [plugin],
+      });
 
-    const response = await localAi.generate({
-      system: SYSTEM_PROMPT,
-      prompt: `Provide details for the drug: ${input.drugName}`,
-      output: { schema: GetDrugInfoOutputSchema },
-    });
+      const response = await localAi.generate({
+        model: plugin.model('gemini-2.5-flash'),
+        system: SYSTEM_PROMPT,
+        prompt: `Provide details for the drug: ${input.drugName}`,
+        output: { schema: GetDrugInfoOutputSchema },
+      });
 
-    if (!response.output) {
-      throw new Error('Failed to get drug information using the provided API key.');
+      if (!response.output) {
+        throw new Error('AI returned an empty response. Please check your drug name.');
+      }
+      return response.output;
+    } catch (error: any) {
+      console.error('Error in local AI generation:', error);
+      // Re-throw specific leaked key error if detected even in local key (unlikely but possible)
+      if (error.message?.includes('leaked')) {
+        throw new Error('The provided personal API key was also reported as leaked. Please generate a fresh key.');
+      }
+      throw error;
     }
-    return response.output;
   }
 
   // Otherwise use the default registered flow

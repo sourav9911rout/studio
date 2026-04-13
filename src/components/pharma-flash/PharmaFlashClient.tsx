@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -81,6 +82,7 @@ import {
   AlertCircle,
   Key,
   ExternalLink,
+  CheckCircle2,
 } from 'lucide-react';
 import {
   Carousel,
@@ -522,13 +524,11 @@ export default function PharmaFlashClient() {
           } catch (error: any) {
             console.error('Error fetching data from AI:', error);
             
-            let errorMessage = 'Could not fetch drug information. Please try again.';
+            let errorMessage = 'Could not fetch drug information. Please check your API key.';
             
             if (error.message?.toLowerCase().includes('leaked')) {
-              errorMessage = 'Your Gemini API key was reported as leaked and has been disabled by Google. Please generate a NEW key at aistudio.google.com and update it in your settings.';
+              errorMessage = 'The API key being used was reported as leaked. Please update your personal key in settings.';
               setAiError(errorMessage);
-            } else if (error.message?.includes('403') || error.message?.includes('401')) {
-              errorMessage = 'AI service permission error. Please check your API key and project status.';
             }
 
             toast({
@@ -619,12 +619,17 @@ export default function PharmaFlashClient() {
       };
 
     const handleSaveLocalKey = () => {
-        localStorage.setItem('PHARMA_GEMINI_KEY', localKeyInput);
-        setUserApiKey(localKeyInput);
-        setAiError(null); // Clear the error banner when a new key is saved
+        if (localKeyInput.trim() === '') {
+            localStorage.removeItem('PHARMA_GEMINI_KEY');
+            setUserApiKey('');
+        } else {
+            localStorage.setItem('PHARMA_GEMINI_KEY', localKeyInput.trim());
+            setUserApiKey(localKeyInput.trim());
+        }
+        setAiError(null); 
         toast({
-            title: 'API Key Saved',
-            description: 'Your personal Gemini API key will now be used for AI features.',
+            title: 'Settings Updated',
+            description: localKeyInput.trim() === '' ? 'Personal API key removed.' : 'Your personal Gemini API key is now active.',
         });
     };
       
@@ -693,19 +698,31 @@ export default function PharmaFlashClient() {
             {isEditing && (
                 <Popover>
                     <PopoverTrigger asChild>
-                        <Button variant="outline" size="icon" className="rounded-full shadow-sm hover:bg-accent/50">
+                        <Button 
+                            variant={userApiKey ? "default" : "outline"} 
+                            size="icon" 
+                            className={cn(
+                                "rounded-full shadow-sm",
+                                userApiKey && "bg-green-600 hover:bg-green-700 text-white"
+                            )}
+                        >
                             <Key className="h-4 w-4" />
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-80 p-6 rounded-3xl" align="end">
                         <div className="space-y-4">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Key className="h-4 w-4 text-primary" />
-                                <h4 className="font-bold font-headline text-lg">AI Settings</h4>
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                    <Key className="h-4 w-4 text-primary" />
+                                    <h4 className="font-bold font-headline text-lg">AI Settings</h4>
+                                </div>
+                                {userApiKey && <CheckCircle2 className="h-4 w-4 text-green-600" />}
                             </div>
                             <div className="space-y-3">
                               <p className="text-xs text-muted-foreground leading-relaxed">
-                                  Enter your personal Gemini API key to bypass global rate limits. This key is stored locally in your browser.
+                                  {userApiKey 
+                                    ? "Your personal API key is currently being used to power AI features."
+                                    : "Enter your personal Gemini API key to bypass global rate limits. This key is stored locally in your browser."}
                               </p>
                               <a 
                                 href="https://aistudio.google.com/app/apikey" 
@@ -722,15 +739,22 @@ export default function PharmaFlashClient() {
                                 <Input 
                                     id="api-key"
                                     type="password" 
-                                    placeholder="Enter Gemini API Key..." 
+                                    placeholder="Paste API Key here..." 
                                     className="rounded-xl font-body text-sm"
                                     value={localKeyInput}
                                     onChange={(e) => setLocalKeyInput(e.target.value)}
                                 />
                             </div>
-                            <Button className="w-full rounded-xl font-bold" onClick={handleSaveLocalKey}>
-                                Save Locally
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button className="flex-1 rounded-xl font-bold" onClick={handleSaveLocalKey}>
+                                    Save Key
+                                </Button>
+                                {userApiKey && (
+                                    <Button variant="outline" className="rounded-xl font-bold" onClick={() => { setLocalKeyInput(''); handleSaveLocalKey(); }}>
+                                        Clear
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                     </PopoverContent>
                 </Popover>
