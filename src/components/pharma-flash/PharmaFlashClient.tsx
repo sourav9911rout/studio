@@ -278,7 +278,7 @@ export default function PharmaFlashClient() {
     
     useEffect(() => {
         setIsClient(true);
-        // Cleanup old local storage keys as requested
+        // Cleanup all locally stored keys
         localStorage.removeItem('PHARMA_GEMINI_KEY');
 
         const params = new URLSearchParams(window.location.search);
@@ -517,7 +517,7 @@ export default function PharmaFlashClient() {
             const msg = error.message || '';
 
             if (msg.includes('API_KEY_EXPOSED')) {
-                errorMessage = 'The system API key is currently flagged as exposed. Please update the GEMINI_API_KEY environment variable in your deployment dashboard.';
+                errorMessage = 'The system API key is currently flagged as exposed by Google. Please update the API key in your Vercel/Deployment environment variables.';
                 setAiError(errorMessage);
             } else if (msg.toLowerCase().includes('high demand') || msg.includes('503')) {
                 errorMessage = 'The AI service is temporarily overloaded. Please wait 30 seconds and try again.';
@@ -668,7 +668,7 @@ export default function PharmaFlashClient() {
           <p className="text-center text-xl font-headline text-primary/80 mt-2 font-bold italic">
             An initiative of Department of Pharmacology, AIIMS-CAPFIMS
           </p>
-          <p className="text-center text-[40px] mt-3 font-headline font-bold text-primary">
+          <p className="text-center text-[48px] mt-3 font-headline font-bold text-primary">
             <b>भेषजगुण विज्ञान विभाग</b>
           </p>
           <div className="absolute top-6 right-6 flex items-center gap-2">
@@ -1097,3 +1097,4 @@ export default function PharmaFlashClient() {
       </>
     );
 }
+

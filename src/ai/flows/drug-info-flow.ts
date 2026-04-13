@@ -60,14 +60,18 @@ Return only the requested information as a JSON object with the specified keys. 
 
 export async function getDrugInfo(input: GetDrugInfoInput): Promise<GetDrugInfoOutput> {
   try {
-    return await getDrugInfoFlow(input);
+    const { output } = await prompt(input);
+    if (!output) {
+      throw new Error('Failed to get drug information from AI.');
+    }
+    return output;
   } catch (error: any) {
     const msg = error.message?.toLowerCase() || '';
-    if (msg.includes('leaked') || msg.includes('exposed')) {
-      throw new Error('API_KEY_EXPOSED: The system API key has been flagged as exposed. Please update the GEMINI_API_KEY in your deployment environment.');
+    if (msg.includes('leaked') || msg.includes('exposed') || msg.includes('apikey')) {
+      throw new Error('API_KEY_EXPOSED: The system API key has been flagged as exposed by Google. Please update the API key in your Vercel/Deployment environment variables.');
     }
     if (msg.includes('high demand') || msg.includes('503') || msg.includes('unavailable')) {
-      throw new Error('The AI model is currently experiencing high demand. Please try again in a moment.');
+      throw new Error('The AI model is currently experiencing high demand (503 Service Unavailable). Please wait 30 seconds and try again.');
     }
     throw error;
   }
@@ -80,18 +84,3 @@ const prompt = ai.definePrompt({
   system: SYSTEM_PROMPT,
   prompt: `Provide details for the drug: {{drugName}}`,
 });
-
-const getDrugInfoFlow = ai.defineFlow(
-  {
-    name: 'getDrugInfoFlow',
-    inputSchema: GetDrugInfoInputSchema,
-    outputSchema: GetDrugInfoOutputSchema,
-  },
-  async (input) => {
-    const { output } = await prompt(input);
-    if (!output) {
-      throw new Error('Failed to get drug information from AI.');
-    }
-    return output;
-  }
-);
