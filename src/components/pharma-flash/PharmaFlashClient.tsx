@@ -656,6 +656,9 @@ export default function PharmaFlashClient() {
           <p className="text-center text-xl font-headline text-primary mt-1 font-bold">
             भेषजगुण विज्ञान विभाग
           </p>
+          <p className="text-center text-lg font-headline text-primary/80 mt-1 italic">
+            An Initiative of department of pharmacology AIIMS-CAPFIMS.
+          </p>
           <p className="text-center text-xl mt-2 font-headline text-primary">
             Your daily dose of Pharmacology.
           </p>
