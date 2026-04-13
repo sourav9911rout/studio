@@ -726,7 +726,7 @@ export default function PharmaFlashClient() {
                         isSelected ? "opacity-100 translate-y-0" : "opacity-70 group-hover:opacity-100"
                       )}>
                         <p className={cn(
-                          "text-base leading-tight font-black line-clamp-2 uppercase tracking-tight",
+                          "text-[10px] leading-tight font-black line-clamp-2 uppercase tracking-tight",
                           isSelected ? "text-primary-foreground" : "text-primary"
                         )}>
                           {dayDrugData?.map(d => d.drugName).join(', ') || (hasData ? 'Highlights' : '')}
@@ -1094,4 +1094,3 @@ export default function PharmaFlashClient() {
       </>
     );
 }
-
