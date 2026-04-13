@@ -493,7 +493,9 @@ export default function PharmaFlashClient() {
           setIsFetchingAI(true);
           setAiError(null);
           try {
-            const result = await getDrugInfo({ drugName: drugNameValue, userApiKey });
+            // Read directly from localStorage to ensure we have the latest saved key
+            const keyToUse = localStorage.getItem('PHARMA_GEMINI_KEY') || userApiKey || '';
+            const result = await getDrugInfo({ drugName: drugNameValue, userApiKey: keyToUse });
             const options = { shouldDirty: true };
       
             if (mode === 'all') {
@@ -526,7 +528,7 @@ export default function PharmaFlashClient() {
             let errorMessage = 'Could not fetch drug information. Please check your API key.';
             
             if (error.message?.toLowerCase().includes('leaked')) {
-              errorMessage = 'The API key being used was reported as leaked. Please update your personal key in settings.';
+              errorMessage = 'The API key being used was reported as leaked or is invalid. If you just added a personal key, please ensure it is correct and try refreshing the page.';
               setAiError(errorMessage);
             }
 

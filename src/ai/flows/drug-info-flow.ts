@@ -65,7 +65,8 @@ export async function getDrugInfo(input: GetDrugInfoInput): Promise<GetDrugInfoO
   // If a user API key is provided, we use a local Genkit instance to prioritize it.
   if (input.userApiKey && input.userApiKey.trim() !== '') {
     try {
-      const plugin = googleAI({ apiKey: input.userApiKey });
+      // Create a fresh plugin instance with the user's key
+      const plugin = googleAI({ apiKey: input.userApiKey.trim() });
       const localAi = genkit({
         plugins: [plugin],
       });
@@ -83,8 +84,8 @@ export async function getDrugInfo(input: GetDrugInfoInput): Promise<GetDrugInfoO
       return response.output;
     } catch (error: any) {
       console.error('Error in local AI generation:', error);
-      if (error.message?.includes('leaked')) {
-        throw new Error('The provided personal API key was reported as leaked. Please generate a fresh key.');
+      if (error.message?.toLowerCase().includes('leaked')) {
+        throw new Error('The provided personal API key was reported as leaked or is invalid. Please generate a fresh key at Google AI Studio.');
       }
       throw error;
     }
