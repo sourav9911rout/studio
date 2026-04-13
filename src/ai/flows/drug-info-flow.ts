@@ -90,7 +90,7 @@ export async function getDrugInfo(input: GetDrugInfoInput): Promise<GetDrugInfoO
         throw new Error('The provided personal API key was reported as leaked or is invalid. Please generate a fresh key at Google AI Studio.');
       }
       if (msg.includes('high demand') || msg.includes('503') || msg.includes('unavailable')) {
-        throw new Error('The AI model is currently experiencing high demand (503 Service Unavailable). Please wait 30 seconds and try again.');
+        throw new Error('The AI model is currently experiencing high demand. Please try again in about 30 seconds.');
       }
       throw error;
     }

@@ -493,7 +493,6 @@ export default function PharmaFlashClient() {
           setIsFetchingAI(true);
           setAiError(null);
           try {
-            // Read directly from localStorage to ensure we have the latest saved key
             const keyToUse = localStorage.getItem('PHARMA_GEMINI_KEY') || userApiKey || '';
             const result = await getDrugInfo({ drugName: drugNameValue, userApiKey: keyToUse });
             const options = { shouldDirty: true };
@@ -529,11 +528,10 @@ export default function PharmaFlashClient() {
             const msg = error.message?.toLowerCase() || '';
 
             if (msg.includes('leaked')) {
-              errorMessage = 'The API key being used was reported as leaked or is invalid. If you just added a personal key, please ensure it is correct and try refreshing the page.';
+              errorMessage = 'The API key being used was reported as leaked or is invalid. Please ensure it is correct and try again.';
               setAiError(errorMessage);
             } else if (msg.includes('high demand') || msg.includes('503')) {
-              errorMessage = 'The AI service is temporarily overloaded (High Demand). Please wait a moment and try again.';
-              setAiError(errorMessage);
+              errorMessage = 'The AI service is temporarily overloaded. Please wait a moment and try again.';
             }
 
             toast({
@@ -929,7 +927,7 @@ export default function PharmaFlashClient() {
               <AlertCircle className="h-5 w-5" />
               <AlertTitle className="font-bold">AI Service Notice</AlertTitle>
               <AlertDescription className="text-sm">
-                {aiError} { !userApiKey && !aiError.toLowerCase().includes('demand') && "To continue using AI features, please provide your own Gemini API key via the Key icon in the top right corner." }
+                {aiError} { !userApiKey && "To continue using AI features, please provide your own Gemini API key via the Key icon in the top right corner." }
               </AlertDescription>
             </Alert>
           )}
